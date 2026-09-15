@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block body %}
+
+<h1>Dashboard Ujian Keahlian Pelaut</h1>
+<p class="sub">Rekapitulasi data ujian, kelulusan, dan penerbitan Surat Keterangan Lulus.</p>
+
+<div class="card" style="margin-top:16px">
+  <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">
+    <label>Tahun<br><select id="fYear"><option value="all">Semua tahun</option>
+      {% for y in years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+    </select></label>
+    <label>Dasar tanggal<br><select id="fBasis">
+      <option value="ujian">Tanggal Ujian</option>
+      <option value="sidang">Tanggal Sidang</option>
+    </select></label>
+    <label>Tampilan grafik<br><select id="fMode">
+      <option value="bar">Batang (Bar)</option>
+      <option value="pie">Lingkaran (Pie)</option>
+      <option value="doughnut">Donat (Doughnut)</option>
+    </select></label>
+    <label>Periode rekap<br><select id="fPeriod">
+      <option value="monthly">Bulanan</option>
+      <option value="annual">Tahunan</option>
+    </select></label>
+    <span class="muted" id="loading" style="margin-left:auto"></span>
+  </div>
+</div>
+
+<div class="stats" id="strip"></div>
+
+<div class="card">
+  <h2>Rekapitulasi <span id="periodLabel">Bulanan</span></h2>
+  <div style="height:320px"><canvas id="cPeriod"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Tingkat Kelulusan per Tingkat Ijazah</h2>
+  <p class="muted" style="margin:-8px 0 12px">Persentase peserta lulus (seluruh nilai &ge; 70) dari total rekaman ujian.
+     Warna menandakan jenis program; gradasi terang menandakan tingkat ijazah yang lebih rendah.</p>
+  <div style="height:340px"><canvas id="cRate"></canvas></div>
+  <div class="legend" id="lRate"></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px">
+  <div class="card"><h2>Rekaman per Tingkat Ijazah</h2>
+    <div style="height:330px"><canvas id="cIjzh"></canvas></div>
+    <div class="legend" id="lIjzh"></div></div>
+  <div class="card"><h2>Rekaman per Lembaga Diklat / Asal Sekolah</h2>
+    <div style="height:330px"><canvas id="cDiklat"></canvas></div></div>
+</div>
+
+<div class="card">
+  <h2>Keterangan Singkatan</h2>
+  <table>
+    <tr><th style="width:7rem">Kode</th><th>Keterangan</th></tr>
+    <tr><td><b>UGN</b></td><td>Upgrading/Peningkatan Nautika</td></tr>
+    <tr><td><b>UGT</b></td><td>Upgrading/Peningkatan Teknika</td></tr>
+    <tr><td><b>GMDSS</b></td><td>Global Maritime Distress and Safety System</td></tr>
+    <tr><td><b>PRAN</b></td><td>Pra Prala Nautika</td></tr>
+    <tr><td><b>PRAT</b></td><td>Pra Prala Teknika</td></tr>
+    <tr><td><b>PASN3</b></td><td>ANT III Pasca Prala</td></tr>
+    <tr><td><b>PAST3</b></td><td>ATT III Pasca Prala</td></tr>
+    <tr><td><b>PASN2</b></td><td>ANT II Pasca Layar (D-IV Lanjutan Nautika)</td></tr>
+    <tr><td><b>PAST2</b></td><td>ATT II Pasca Layar (D-IV Lanjutan Teknika)</td></tr>
+  </table>
+  <p class="muted" style="margin:12px 0 0">
+    Angka di belakang kode menunjukkan tingkat ijazah, mis. <b>UGN5</b> = Peningkatan Nautika ke ANT-V,
+    <b>UGT2</b> = Peningkatan Teknika ke ATT-II.</p>
+</div>
+
+<div class="card" id="cari">
+  <h2>Cek Data Peserta</h2>
+  <form method="post">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input name="q" value="{{ q or '' }}" style="flex:1;min-width:260px"
+             placeholder="Ketik nama atau seafarer code (mis. 6212225863)">
+      <button>Cari</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">
+      Anda akan diminta memverifikasi tanggal lahir atau tanggal UKP pertama sebelum data ditampilkan.</p>
+  </form>
+
+  {% if results %}
+    <table style="margin-top:14px">
+      <tr><th>Nama</th><th>Seafarer Code</th><th>Rekaman</th><th></th></tr>
+      {% for r in results %}
+      <tr><td>{{ r.nama }}</td><td>{{ r.sc }}</td><td>{{ r.n }}</td>
+          <td><a href="{{ url_for('verify', sc=r.sc) }}">Lihat data &rarr;</a></td></tr>
+      {% endfor %}
+    </table>
+    {% if truncated %}<p class="muted">Hasil dibatasi. Persempit pencarian Anda.</p>{% endif %}
+  {% endif %}
+</div>
+
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+<script>
+const C = {brand:'#0652e9', light:'#2f77f5', dark:'#003ac2', ok:'#52c41a',
+           warn:'#feb201', bad:'#ff4d4f', line:'#e3e8f0', muted:'#5b6b85'};
+const PIE = ['#0652e9','#2f77f5','#5a90fb','#003ac2','#13c2c2','#52c41a','#feb201',
+             '#fa8c16','#eb2f96','#722ed1','#044a68','#2a3990','#ff4d4f','#8c8c8c'];
+
+// Programme families. The trailing digit of a code is the ANT/ATT level
+// (UGN5 = Upgrading Nautika ke ANT-V), so we key on the letter prefix and
+// shade by level: one hue per family, light -> dark as the level rises.
+const FAMILY = [
+  ['UGN',   'Upgrading/Peningkatan Nautika',              '#0652e9'],
+  ['UGT',   'Upgrading/Peningkatan Teknika',              '#00a3a3'],
+  ['PRAN',  'Pra Prala Nautika',                          '#722ed1'],
+  ['PRAT',  'Pra Prala Teknika',                          '#c41d7f'],
+  ['PASN3', 'ANT III Pasca Prala',                        '#fa8c16'],
+  ['PAST3', 'ATT III Pasca Prala',                        '#d4380d'],
+  ['PASN2', 'ANT II Pasca Layar (D-IV Lanjutan Nautika)', '#7cb305'],
+  ['PAST2', 'ATT II Pasca Layar (D-IV Lanjutan Teknika)', '#389e0d'],
+  ['GMDSS', 'Global Maritime Distress and Safety System', '#1d39c4'],
+];
+// Longest prefix first so PASN3 wins over a hypothetical PAS.
+const FAM_ORDER = [...FAMILY].sort((a,b) => b[0].length - a[0].length);
+const famOf = code => FAM_ORDER.find(f => code.startsWith(f[0])) || null;
+
+// Shade a family hue by exam level: level 1 darkest, level 5 lightest.
+function shade(hex, level){
+  if (!level) return hex;
+  const n = parseInt(hex.slice(1),16);
+  let [r,g,b] = [n>>16, (n>>8)&255, n&255];
+  const t = (level - 1) / 4 * 0.55;                 // 0 at ANT-I, .55 at ANT-V
+  [r,g,b] = [r,g,b].map(v => Math.round(v + (255 - v) * t));
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+function ijzhColor(code){
+  const f = famOf(code);
+  if (!f) return '#8c8c8c';
+  const m = code.match(/(\d)(?!.*\d)/);             // trailing level digit
+  return shade(f[2], f[0] === 'GMDSS' ? 0 : (m ? +m[1] : 0));
+}
+
+const charts = {};
+const fmt = n => (n ?? 0).toLocaleString('id-ID');
+Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+Chart.defaults.color = C.muted;
+
+function draw(id, cfg){
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+
+// Abbreviation key under a chart: only the families actually present, in the
+// order they appear, so the reader never hunts for a code that isn't charted.
+function legend(id, codes){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const seen = [];
+  for (const c of codes) {
+    const f = famOf(c);
+    if (f && !seen.includes(f)) seen.push(f);
+  }
+  el.innerHTML = seen.map(f =>
+    `<span class="lg"><i style="background:${f[2]}"></i><b>${f[0]}</b> ${f[1]}</span>`
+  ).join('');
+}
+const gridX = {grid:{display:false}}, gridY = {grid:{color:C.line},beginAtZero:true};
+
+function render(d){
+  const mode = document.getElementById('fMode').value;
+  const period = document.getElementById('fPeriod').value;
+  const t = d.total, rate = t.total ? (100*t.lulus/t.total) : 0;
+  const belum = (d.skl.total||0) - (d.skl.cetak||0);
+
+  document.getElementById('strip').innerHTML = `
+    <div class="stat"><div class="k">Total Rekaman Ujian</div><div class="v">${fmt(t.total)}</div>
+      <div class="d">${fmt(t.peserta)} peserta unik</div></div>
+    <div class="stat" style="border-left-color:${C.ok}"><div class="k">Lulus</div>
+      <div class="v">${fmt(t.lulus)}</div><div class="d">${rate.toFixed(1)}% tingkat kelulusan</div></div>
+    <div class="stat" style="border-left-color:${C.bad}"><div class="k">Belum Lulus</div>
+      <div class="v">${fmt(t.total - t.lulus)}</div><div class="d">${(100-rate).toFixed(1)}% dari total</div></div>
+    <div class="stat" style="border-left-color:${C.warn}"><div class="k">SKL Tercetak</div>
+      <div class="v">${fmt(d.skl.cetak)}</div><div class="d">${fmt(belum)} belum dicetak</div></div>`;
+
+  // --- periodic recap ---
+  const src = period === 'annual' ? d.annual : d.monthly;
+  const keyf = period === 'annual' ? 'tahun' : 'bulan';
+  const labels = src.map(r => r[keyf]);
+  document.getElementById('periodLabel').textContent = period === 'annual' ? 'Tahunan' : 'Bulanan';
+
+  if (mode === 'bar') {
+    draw('cPeriod', {type:'bar', data:{labels, datasets:[
+      {label:'Lulus', data:src.map(r=>r.lulus), backgroundColor:C.ok, stack:'s'},
+      {label:'Belum lulus', data:src.map(r=>r.total-r.lulus), backgroundColor:C.bad, stack:'s'}]},
+      options:{maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        scales:{x:{...gridX,stacked:true}, y:{...gridY,stacked:true}},
+        plugins:{legend:{position:'bottom'}}}});
+  } else {
+    draw('cPeriod', {type:mode, data:{labels, datasets:[
+      {data:src.map(r=>r.total), backgroundColor:PIE, borderWidth:1, borderColor:'#fff'}]},
+      options:{maintainAspectRatio:false, plugins:{legend:{position:'right',
+        labels:{boxWidth:12,font:{size:11}}}}}});
+  }
+
+  // --- success rate per ijazah (always a bar: percentages don't sum to a whole) ---
+  const ij = d.per_ijzh.filter(r => r.total >= 5);
+  draw('cRate', {type:'bar', data:{labels:ij.map(r=>r.ijzh), datasets:[
+    {label:'Tingkat kelulusan (%)', data:ij.map(r=>+(100*r.lulus/r.total).toFixed(1)),
+     backgroundColor:ij.map(r=>ijzhColor(r.ijzh)), borderRadius:3}]},
+    options:{maintainAspectRatio:false, scales:{x:gridX,
+      y:{...gridY,max:100,ticks:{callback:v=>v+'%'}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{
+        title:c=>{const r=ij[c[0].dataIndex]; const f=famOf(r.ijzh);
+          return f ? `${r.ijzh} — ${f[1]}` : r.ijzh;},
+        afterLabel:c=>{const r=ij[c.dataIndex];
+          return [`${fmt(r.lulus)} lulus dari ${fmt(r.total)} rekaman`,
+                  r.deskripsi || ''].filter(Boolean);}}}}}});
+  legend('lRate', ij.map(r=>r.ijzh));
+
+  // --- per ijazah / per diklat ---
+  const barOrPie = (id, rows, key, colorFn) => {
+    const lab = rows.map(r=>r[key]), val = rows.map(r=>r.total);
+    const bg = colorFn ? rows.map(r=>colorFn(r[key])) : PIE;
+    const tip = key === 'ijzh' ? {callbacks:{
+      title:c=>{const r=rows[c[0].dataIndex]; const f=famOf(r.ijzh);
+        return f ? `${r.ijzh} — ${f[1]}` : r.ijzh;},
+      afterLabel:c=>rows[c.dataIndex].deskripsi || ''}} : {};
+    if (mode === 'bar') {
+      draw(id, {type:'bar', data:{labels:lab, datasets:[{label:'Rekaman', data:val,
+        backgroundColor:bg, borderRadius:3}]},
+        options:{maintainAspectRatio:false, indexAxis:'y',
+          scales:{x:{...gridY}, y:{...gridX,ticks:{font:{size:11}}}},
+          plugins:{legend:{display:false}, tooltip:tip}}});
+    } else {
+      draw(id, {type:mode, data:{labels:lab, datasets:[{data:val,
+        backgroundColor:bg, borderWidth:1, borderColor:'#fff'}]},
+        options:{maintainAspectRatio:false, plugins:{legend:{position:'right',
+          labels:{boxWidth:12,font:{size:11}}}, tooltip:tip}}});
+    }
+  };
+  barOrPie('cIjzh', d.per_ijzh, 'ijzh', ijzhColor);
+  legend('lIjzh', d.per_ijzh.map(r=>r.ijzh));
+  barOrPie('cDiklat', d.per_diklat, 'diklat');
+}
+
+async function load(){
+  const el = document.getElementById('loading');
+  el.textContent = 'Memuat data...';
+  const y = document.getElementById('fYear').value;
+  const b = document.getElementById('fBasis').value;
+  try {
+    const r = await fetch(`/api/stats?year=${y}&basis=${b}`);
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+    el.textContent = '';
+  } catch(e) { el.textContent = 'Gagal memuat data statistik.'; }
+}
+['fYear','fBasis','fMode','fPeriod'].forEach(id =>
+  document.getElementById(id).addEventListener('change', load));
+load();
+</script>
+{% endblock %}

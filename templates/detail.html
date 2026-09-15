@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+  <div><h1 style="margin:0">{{ nama }}</h1>
+    <span class="muted">Seafarer Code {{ sc }} &middot; {{ cards|length }} tingkat ijazah</span></div>
+  <a href="{{ url_for('logout') }}"><button type="button">Keluar</button></a>
+</div>
+
+{% for c in cards %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+    <div>
+      <h2 style="margin-bottom:6px">{{ c.p.ijzh }}
+        {% if c.lulus %}<span class="tag pass">LULUS</span>
+        {% else %}<span class="tag fail">BELUM LULUS</span>{% endif %}</h2>
+      {% if c.attempts and c.attempts[0].ijzh_nama %}
+        <div class="muted">{{ c.attempts[0].ijzh_nama }}</div>{% endif %}
+      <div class="muted">No. UKP {{ c.p.noukp }} &middot;
+        {{ c.p.diklat_nama or c.p.diklat }} &middot; UKP pertama {{ c.p.ukp1 or '-' }}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">Surat Keterangan Lulus</div>
+      {% if c.skl and c.skl.tgl_cetak %}
+        <span class="tag pass">SUDAH DICETAK</span>
+        <div class="muted">No. {{ c.skl.noskl }} &middot; {{ c.skl.tgl_cetak }}<br>
+          berlaku s/d {{ c.skl.valid_through or '-' }}</div>
+      {% elif c.skl %}
+        <span class="tag warn">TERDAFTAR, BELUM DICETAK</span>
+        <div class="muted">No. {{ c.skl.noskl }}</div>
+      {% else %}
+        <span class="tag fail">BELUM DICETAK</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if c.attempts %}
+    {% for a in c.attempts %}
+      <div style="margin-top:16px;padding:10px 12px;background:#f9fbff;border-radius:6px;
+                  border-left:3px solid {{ '#52c41a' if a.lulus else '#ff4d4f' }}">
+        <b>Ujian {{ a.tgl_ujian or '-' }}</b>
+        <span class="muted">&middot; sidang {{ a.tgl_sidang or '-' }}
+          &middot; mengulang ke-{{ a.mengulang_ke if a.mengulang_ke is not none else '-' }}
+          &middot; nilai di bawah 70: <b>{{ a.her_calc }}</b></span>
+        {% if a.her is not none and a.her != a.her_calc %}
+          <span class="tag warn">data sumber tidak konsisten</span>{% endif %}
+      </div>
+      <table style="margin-top:8px">
+        <tr><th style="width:3rem">No</th><th>Materi Uji</th><th style="width:6rem">Nilai</th></tr>
+        {% for v in a.mu %}{% if v is not none %}
+          <tr><td>{{ loop.index }}</td>
+            <td>{{ c.mu_names[loop.index0] if loop.index0 < c.mu_names|length else 'MU' ~ loop.index }}</td>
+            <td class="score {% if v < 70 %}low{% endif %}">{{ v }}</td></tr>
+        {% endif %}{% endfor %}
+      </table>
+    {% endfor %}
+  {% else %}
+    <p class="muted" style="margin-top:14px">Belum ada rekaman nilai untuk tingkat ijazah ini.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

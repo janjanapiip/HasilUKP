@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width:520px;margin:0 auto">
+  <h2>Verifikasi Identitas</h2>
+  <p>Data atas nama <b>{{ nama }}</b><br><span class="muted">Seafarer Code {{ sc }}</span></p>
+  <form method="post" style="margin-top:16px">
+    <p><label>Tanggal lahir<br>
+      <input name="tgl_lahir" style="width:100%" placeholder="1996-06-05"></label></p>
+    <p><label>Tanggal UKP pertama (UKP1)<br>
+      <input name="ukp1" style="width:100%" placeholder="2021-11-08"></label></p>
+    <p class="muted">Cukup isi salah satu yang Anda ingat.
+       Format: YYYY-MM-DD atau DD/MM/YYYY.</p>
+    <button style="width:100%">Verifikasi</button>
+  </form>
+</div>
+<p class="muted" style="text-align:center;margin-top:16px">
+  <a href="{{ url_for('index') }}">&larr; Kembali ke pencarian</a></p>
+{% endblock %}

@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+ukp.db
+exceptions.csv
+_page.html
+_dash.js
+_*.txt
+_*.py
