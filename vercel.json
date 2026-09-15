@@ -3,7 +3,8 @@
     { "src": "app.py", "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/static/(.*)", "dest": "/public/$1" },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "app.py" }
-  ]
+  ],
+  "outputDirectory": "public"
 }

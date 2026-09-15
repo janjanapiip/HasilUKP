@@ -6,3 +6,5 @@ _page.html
 _dash.js
 _*.txt
 _*.py
+
+.vercel
