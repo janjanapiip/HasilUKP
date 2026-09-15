@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Cek Data Peserta — PUKP-3{% endblock %}
+{% block body %}
+
+<h1>Cek Data Peserta</h1>
+<p class="sub">Cari berdasarkan nama atau seafarer code, lalu verifikasi identitas untuk melihat data ujian dan status SKL.</p>
+
+<div class="card" style="margin-top:16px">
+  <form method="post">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input name="q" value="{{ q or '' }}" style="flex:1;min-width:260px"
+             placeholder="Ketik nama atau seafarer code (mis. 6212225863)" autofocus>
+      <button>Cari</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">
+      Anda akan diminta memverifikasi tanggal lahir atau tanggal UKP pertama sebelum data ditampilkan.</p>
+  </form>
+</div>
+
+{% if results %}
+  <div class="card">
+    <h2>Hasil Pencarian</h2>
+    <table>
+      <tr><th>Nama</th><th>Seafarer Code</th><th>Rekaman</th><th></th></tr>
+      {% for r in results %}
+      <tr><td>{{ r.nama }}</td><td>{{ r.sc }}</td><td>{{ r.n }}</td>
+          <td><a href="{{ url_for('verify', sc=r.sc) }}">Lihat data &rarr;</a></td></tr>
+      {% endfor %}
+    </table>
+    {% if truncated %}<p class="muted">Hasil dibatasi. Persempit pencarian Anda.</p>{% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}

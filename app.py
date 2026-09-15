@@ -143,17 +143,22 @@ def api_stats():
     }
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
+    return render_template("index.html")
+
+
+@app.route("/cek", methods=["GET", "POST"])
+def cek():
     if request.method == "GET":
-        return render_template("index.html")
+        return render_template("cek.html")
 
     q = (request.form.get("q") or "").strip()
     if len(q) < 3:
-        return render_template("index.html", error="Masukkan minimal 3 karakter.")
+        return render_template("cek.html", error="Masukkan minimal 3 karakter.")
     if throttled():
         log("search", "rate_limited", q=q)
-        return render_template("index.html", error=(
+        return render_template("cek.html", error=(
             f"Terlalu banyak percobaan gagal. Coba lagi dalam {WINDOW_MIN} menit."))
 
     if re.fullmatch(r"\d{6,}", q):
@@ -168,8 +173,8 @@ def index():
 
     log("search", "ok" if rows else "not_found", q=q)
     if not rows:
-        return render_template("index.html", q=q, error="Data tidak ditemukan.")
-    return render_template("index.html", q=q, results=rows[:MAX_RESULTS],
+        return render_template("cek.html", q=q, error="Data tidak ditemukan.")
+    return render_template("cek.html", q=q, results=rows[:MAX_RESULTS],
                            truncated=len(rows) > MAX_RESULTS)
 
 

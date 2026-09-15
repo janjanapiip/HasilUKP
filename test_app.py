@@ -48,12 +48,16 @@ with A.app.test_client() as c:
     assert (c.get("/api/stats?year=2026&basis=ujian").get_json()["total"]["total"]
             < c.get("/api/stats?year=all&basis=ujian").get_json()["total"]["total"]), "year filter inert"
 
-    r = c.post("/", data={"q": sc})
+    r = c.post("/cek", data={"q": sc})
     assert nama.encode() in r.data, "search by seafarer code failed"
-    r = c.post("/", data={"q": nama[:6]})
+    r = c.post("/cek", data={"q": nama[:6]})
     assert b"Seafarer Code" in r.data, "search by name failed"
-    r = c.post("/", data={"q": "ZZQQXX"})
+    r = c.post("/cek", data={"q": "ZZQQXX"})
     assert "tidak ditemukan".encode() in r.data, "empty search not handled"
+
+    # /cek page must render on its own (GET)
+    r = c.get("/cek")
+    assert r.status_code == 200 and b"Cek Data Peserta" in r.data, "/cek page missing"
 
     # detail must be unreachable before verifying
     assert c.get(f"/detail/{sc}").status_code == 302, "detail not gated"

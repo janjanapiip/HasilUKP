@@ -116,7 +116,7 @@ body{min-height:100vh;display:flex;flex-direction:column} main{flex:1}
 
 <nav class="navbar"><div class="wrap">
   <a href="{{ url_for('index') }}" class="{{ 'on' if request.endpoint=='index' }}">Beranda</a>
-  <a href="{{ url_for('index') }}#cari">Cek Data Peserta</a>
+  <a href="{{ url_for('cek') }}" class="{{ 'on' if request.endpoint in ('cek','verify','detail') }}">Cek Data Peserta</a>
 </div></nav>
 
 <main><div class="wrap">

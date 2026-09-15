@@ -68,29 +68,7 @@
     <b>UGT2</b> = Peningkatan Teknika ke ATT-II.</p>
 </div>
 
-<div class="card" id="cari">
-  <h2>Cek Data Peserta</h2>
-  <form method="post">
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input name="q" value="{{ q or '' }}" style="flex:1;min-width:260px"
-             placeholder="Ketik nama atau seafarer code (mis. 6212225863)">
-      <button>Cari</button>
-    </div>
-    <p class="muted" style="margin:10px 0 0">
-      Anda akan diminta memverifikasi tanggal lahir atau tanggal UKP pertama sebelum data ditampilkan.</p>
-  </form>
 
-  {% if results %}
-    <table style="margin-top:14px">
-      <tr><th>Nama</th><th>Seafarer Code</th><th>Rekaman</th><th></th></tr>
-      {% for r in results %}
-      <tr><td>{{ r.nama }}</td><td>{{ r.sc }}</td><td>{{ r.n }}</td>
-          <td><a href="{{ url_for('verify', sc=r.sc) }}">Lihat data &rarr;</a></td></tr>
-      {% endfor %}
-    </table>
-    {% if truncated %}<p class="muted">Hasil dibatasi. Persempit pencarian Anda.</p>{% endif %}
-  {% endif %}
-</div>
 
 <script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
 <script>
