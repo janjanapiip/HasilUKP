@@ -10,6 +10,11 @@ from flask import (Flask, g, redirect, render_template, request, session,
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "ukp.db")
+# Vercel: serverless functions have a read-only deploy filesystem.
+# access_log writes go to /tmp so they survive within a warm instance
+# but are lost on cold start. Rate limiting is best-effort on Vercel.
+LOG_DB = os.path.join(os.environ.get("TMPDIR", "/tmp"), "access_log.db") \
+    if os.environ.get("VERCEL") else DB
 
 FAIL_LIMIT = 8          # failed verifications per IP
 WINDOW_MIN = 15         # ...within this many minutes
@@ -28,9 +33,25 @@ def db():
     return g.db
 
 
+def log_db():
+    """Writable connection for access_log. On Vercel this is /tmp; locally same as db()."""
+    if "log_db" not in g:
+        if LOG_DB == DB:
+            return db()
+        g.log_db = sqlite3.connect(LOG_DB)
+        g.log_db.row_factory = sqlite3.Row
+        g.log_db.execute(
+            "CREATE TABLE IF NOT EXISTS access_log"
+            " (ts TEXT, ip TEXT, ua TEXT, action TEXT, q TEXT,"
+            "  sc TEXT, uc TEXT, outcome TEXT)")
+    return g.log_db
+
+
 @app.teardown_appcontext
 def _close(_):
     if (c := g.pop("db", None)) is not None:
+        c.close()
+    if (c := g.pop("log_db", None)) is not None:
         c.close()
 
 
@@ -40,22 +61,28 @@ def client_ip():
 
 
 def log(action, outcome, q=None, sc=None, uc=None):
-    db().execute(
-        "INSERT INTO access_log (ts,ip,ua,action,q,sc,uc,outcome) VALUES (?,?,?,?,?,?,?,?)",
-        (datetime.datetime.now().isoformat(timespec="seconds"), client_ip(),
-         request.headers.get("User-Agent", "")[:300], action, q, sc, uc, outcome),
-    )
-    db().commit()
+    try:
+        log_db().execute(
+            "INSERT INTO access_log (ts,ip,ua,action,q,sc,uc,outcome) VALUES (?,?,?,?,?,?,?,?)",
+            (datetime.datetime.now().isoformat(timespec="seconds"), client_ip(),
+             request.headers.get("User-Agent", "")[:300], action, q, sc, uc, outcome),
+        )
+        log_db().commit()
+    except sqlite3.OperationalError:
+        pass  # read-only fs on Vercel cold start edge case
 
 
 def throttled():
     since = (datetime.datetime.now()
              - datetime.timedelta(minutes=WINDOW_MIN)).isoformat(timespec="seconds")
-    n = db().execute(
-        "SELECT COUNT(*) FROM access_log WHERE ip=? AND ts>? AND outcome='bad_verify'",
-        (client_ip(), since),
-    ).fetchone()[0]
-    return n >= FAIL_LIMIT
+    try:
+        n = log_db().execute(
+            "SELECT COUNT(*) FROM access_log WHERE ip=? AND ts>? AND outcome='bad_verify'",
+            (client_ip(), since),
+        ).fetchone()[0]
+        return n >= FAIL_LIMIT
+    except sqlite3.OperationalError:
+        return False
 
 
 def norm_date(t):

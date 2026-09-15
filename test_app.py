@@ -10,10 +10,14 @@ import app as A
 # rows, which would otherwise lock the real site out of its own access_log.
 A.DB = os.path.join(tempfile.mkdtemp(), "test.db")
 shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ukp.db"), A.DB)
+A.LOG_DB = A.DB          # keep log writes in the throwaway copy
 A.app.config["TESTING"] = True
 A.app.secret_key = "test"
 con = sqlite3.connect(A.DB)
 con.row_factory = sqlite3.Row
+# Clear any leftover rate-limit rows from the real DB (copied above)
+con.execute("DELETE FROM access_log")
+con.commit()
 
 # pick a real seafarer with grades, a usable DOB and an SKL row
 row = con.execute("""
