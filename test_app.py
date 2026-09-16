@@ -147,6 +147,13 @@ with A.app.test_client() as c:
     rows_cetak = con.execute("SELECT COUNT(*) FROM skl WHERE tgl_cetak IS NOT NULL").fetchone()[0]
     assert j["skl"]["cetak"] < rows_cetak, "reprints still inflating the printed count"
     print(f"SKL stat OK: {j['skl']['cetak']} seafarers printed (was {rows_cetak} rows)")
+
+    # Indonesian month names ('06 Juli 2026') used to parse as None, so a
+    # printed SKL showed as unprinted. Guard the loaded data, not just the ETL.
+    blank = con.execute("SELECT COUNT(*) FROM skl WHERE tgl_cetak IS NULL").fetchone()[0]
+    assert blank < 20, f"{blank} SKL rows have no print date - date parsing regressed?"
+    blank_ujian = con.execute("SELECT COUNT(*) FROM nilai WHERE tgl_ujian IS NULL").fetchone()[0]
+    assert blank_ujian == 0, f"{blank_ujian} exam rows have no date - date parsing regressed?"
     c.get("/logout")
 
     # rate limit kicks in after FAIL_LIMIT bad attempts

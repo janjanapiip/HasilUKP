@@ -125,6 +125,32 @@ def s(v):
     return "" if t in BAD else t
 
 
+ID_MONTHS = {
+    "jan": 1, "feb": 2, "peb": 2, "mar": 3, "apr": 4, "mei": 5, "jun": 6,
+    "jul": 7, "agu": 8, "agt": 8, "ags": 8, "sep": 9, "okt": 10, "nov": 11, "des": 12,
+}
+
+
+def _id_month(t):
+    """'06 Juli 2026' / '04-OKT-21' -> ISO. strptime's %b/%B is English-only
+    under the C locale, so Indonesian month names parse as nothing and the
+    date is silently lost (417 cells across both workbooks)."""
+    m = re.fullmatch(r"(\d{1,2})[\s/-]+([A-Za-z]+)[\s/-]+(\d{2}|\d{4})", t.strip())
+    if not m:
+        return None
+    day, name, year = m.group(1), m.group(2).lower()[:3], int(m.group(3))
+    mon = ID_MONTHS.get(name)
+    if not mon:
+        return None
+    if year < 100:                       # '21' -> 2021; source has no pre-1970 dates
+        year += 2000 if year < 70 else 1900
+    try:
+        p = datetime.date(year, mon, int(day))
+    except ValueError:
+        return None
+    return None if p.year < 1910 else p.isoformat()
+
+
 def d(v):
     """Cell -> ISO date string or None. Source stores 84% of dates as text."""
     if isinstance(v, datetime.datetime):
@@ -140,7 +166,7 @@ def d(v):
             return None if p.year < 1910 else p.isoformat()
         except ValueError:
             pass
-    return None
+    return _id_month(t)
 
 
 def num(v):
@@ -351,6 +377,20 @@ def main():
     assert q("SELECT COUNT(*) FROM skl") > 7000, "skl under-loaded"
     assert q("SELECT COUNT(*) FROM ref_ijzh") > 40, "CONS lookup not parsed"
     assert orphan < 30, f"too many nilai rows with no peserta: {orphan}"
+
+    # Dates: the source writes Indonesian month names ('06 Juli 2026',
+    # '04-OKT-21') that strptime cannot read under the C locale. Those parsed
+    # as None and vanished silently, so assert they stay parsed.
+    for txt, want in (("06 Juli 2026", "2026-07-06"), ("04-OKT-21", "2021-10-04"),
+                      ("1 Des 2022", "2022-12-01"), ("28 Peb 2021", "2021-02-28"),
+                      ("12 Mar 2022", "2022-03-12"), ("2021-10-28", "2021-10-28"),
+                      ("00:00:00", None), ("32 Des 2021", None)):
+        assert d(txt) == want, f"date parser regression: {txt!r} -> {d(txt)!r}, want {want!r}"
+    blank_ujian = q("SELECT COUNT(*) FROM nilai WHERE tgl_ujian IS NULL")
+    assert blank_ujian == 0, f"{blank_ujian} nilai rows lost their exam date"
+    blank_cetak = q("SELECT COUNT(*) FROM skl WHERE tgl_cetak IS NULL")
+    assert blank_cetak < 20, f"{blank_cetak} SKL rows lost their print date"
+
     unattached = {r[0] for r in con.execute(
         "SELECT uc_raw FROM nilai n LEFT JOIN peserta p USING(uc) WHERE p.uc IS NULL"
         " UNION SELECT uc_raw FROM skl s LEFT JOIN peserta p USING(uc) WHERE p.uc IS NULL")}
