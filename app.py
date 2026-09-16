@@ -152,10 +152,13 @@ def api_stats():
         f" SUM(n.lulus) lulus FROM nilai n JOIN peserta p ON p.uc = n.uc"
         f" WHERE {nwhere}"
         f" GROUP BY p.diklat ORDER BY total DESC", args)
+    # Count distinct uc, not rows: 1,115 uc own several SKL rows (reprints),
+    # which would otherwise inflate the printed figure.
     skl_where = "1=1" if year == "all" else "substr(tgl_cetak,1,4)=?"
     skl_args = [] if year == "all" else [year]
     skl = db().execute(
-        f"SELECT COUNT(*) total, SUM(tgl_cetak IS NOT NULL) cetak"
+        f"SELECT COUNT(DISTINCT uc) total,"
+        f" COUNT(DISTINCT CASE WHEN tgl_cetak IS NOT NULL THEN uc END) cetak"
         f" FROM skl WHERE {skl_where}", skl_args).fetchone()
     tot = db().execute(
         f"SELECT COUNT(*) total, SUM(lulus) lulus,"
@@ -257,8 +260,16 @@ def detail(sc):
         f" LEFT JOIN ref_ijzh r ON r.ijzh = n.ijzh"
         f" WHERE n.uc IN ({marks}) ORDER BY n.tgl_ujian DESC, n.mengulang_ke", ucs
     ).fetchall()
-    skl = {r["uc"]: r for r in db().execute(
-        f"SELECT * FROM skl WHERE uc IN ({marks}) ORDER BY tgl_cetak DESC", ucs)}
+    # A uc can own several SKL rows (reprints). Iterate oldest-first so the
+    # dict ends up holding the NEWEST one; rows with no tgl_cetak sort first
+    # and never displace a printed one.
+    skl_rows = db().execute(
+        f"SELECT * FROM skl WHERE uc IN ({marks})"
+        f" ORDER BY (tgl_cetak IS NOT NULL), tgl_cetak", ucs).fetchall()
+    skl = {r["uc"]: r for r in skl_rows}
+    skl_count = {}
+    for r in skl_rows:
+        skl_count[r["uc"]] = skl_count.get(r["uc"], 0) + 1
 
     # one card per ijazah level: its attempts, subject names, SKL status
     cards = []
@@ -273,6 +284,7 @@ def detail(sc):
             "attempts": [dict(a, mu=json.loads(a["mu"])) for a in att],
             "mu_names": names,
             "skl": skl.get(p["uc"]),
+            "skl_n": skl_count.get(p["uc"], 0),
             "lulus": any(a["lulus"] for a in att),
             "tgl": dates[0] if dates else (p["ukp1"] or ""),
             "tgl_akhir": dates[-1] if dates else (p["ukp1"] or ""),

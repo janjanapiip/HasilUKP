@@ -22,6 +22,11 @@
         {% else %}<span class="tag fail">BELUM LULUS</span>{% endif %}
         <div class="muted">{{ c.tgl or '-' }}{% if c.n_ujian > 1 %}
           &middot; {{ c.n_ujian }}x ujian{% endif %}</div>
+        <div class="muted" style="margin-top:2px">SKL:
+          {% if c.skl and c.skl.tgl_cetak %}<b>{{ c.skl.tgl_cetak }}</b>
+          {% elif c.skl %}terdaftar
+          {% elif c.lulus %}belum terbit
+          {% else %}&mdash;{% endif %}</div>
       </div>
       {% if not loop.last %}<div class="tl-arrow">&rarr;</div>{% endif %}
     </div>
@@ -48,12 +53,19 @@
       {% if c.skl and c.skl.tgl_cetak %}
         <span class="tag pass">SUDAH DICETAK</span>
         <div class="muted">No. {{ c.skl.noskl }} &middot; {{ c.skl.tgl_cetak }}<br>
-          berlaku s/d {{ c.skl.valid_through or '-' }}</div>
+          berlaku s/d {{ c.skl.valid_through or '-' }}
+          {% if c.skl_n > 1 %}<br>{{ c.skl_n }}x cetak, tanggal terbaru{% endif %}</div>
       {% elif c.skl %}
         <span class="tag warn">TERDAFTAR, BELUM DICETAK</span>
-        <div class="muted">No. {{ c.skl.noskl }}</div>
+        <div class="muted">No. {{ c.skl.noskl }}
+          {% if c.skl.tgl_sidang %}&middot; sidang {{ c.skl.tgl_sidang }}{% endif %}</div>
+      {% elif c.lulus %}
+        <span class="tag warn">BELUM TERBIT</span>
+        <div class="muted">Lulus, namun SKL belum tercatat.<br>
+          Hubungi PUKP-3 bila sudah lebih dari 30 hari.</div>
       {% else %}
-        <span class="tag fail">BELUM DICETAK</span>
+        <span class="tag fail">TIDAK ADA</span>
+        <div class="muted">SKL terbit setelah dinyatakan lulus.</div>
       {% endif %}
     </div>
   </div>

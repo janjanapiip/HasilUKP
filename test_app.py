@@ -107,6 +107,46 @@ with A.app.test_client() as c:
     # search results must expose the levels so the upgrade path is visible pre-verify
     r = c.post("/cek", data={"q": sc})
     assert b"Tingkat Ijazah" in r.data, "search results missing level column"
+
+    # --- SKL status: reprints must show the NEWEST print date ---
+    rp = con.execute("""
+        SELECT p.sc, p.ukp1, MAX(s.tgl_cetak) newest, MIN(s.tgl_cetak) oldest
+        FROM skl s JOIN peserta p ON p.uc = s.uc
+        WHERE p.ukp1 IS NOT NULL AND s.tgl_cetak IS NOT NULL
+        GROUP BY s.uc HAVING COUNT(*) > 1 AND newest <> oldest LIMIT 1""").fetchone()
+    if rp:
+        c.get("/logout")
+        h = c.post(f"/verify/{rp['sc']}", data={"tgl_lahir": "", "ukp1": rp["ukp1"]},
+                   follow_redirects=True).data.decode("utf-8", "replace")
+        assert rp["newest"] in h, f"newest print date {rp['newest']} not shown"
+        assert rp["oldest"] not in h, f"stale print date {rp['oldest']} shown instead"
+        assert "cetak, tanggal terbaru" in h, "reprint count not disclosed"
+        print(f"SKL reprint OK: {rp['sc']} shows {rp['newest']} not {rp['oldest']}")
+        c.get("/logout")
+
+    # a pass with no SKL row must read 'belum terbit', never 'sudah dicetak'
+    nb = con.execute("""
+        SELECT p.sc, p.ukp1 FROM peserta p JOIN nilai n ON n.uc = p.uc
+        WHERE n.lulus = 1 AND p.ukp1 IS NOT NULL
+          AND p.sc NOT IN (SELECT p2.sc FROM peserta p2 JOIN skl s ON s.uc = p2.uc)
+        LIMIT 1""").fetchone()
+    if nb:
+        h = c.post(f"/verify/{nb['sc']}", data={"tgl_lahir": "", "ukp1": nb["ukp1"]},
+                   follow_redirects=True).data.decode("utf-8", "replace")
+        assert "BELUM TERBIT" in h, "passed-but-unissued SKL mislabelled"
+        assert "SUDAH DICETAK" not in h, "unissued SKL claimed as printed"
+        c.get("/logout")
+
+    # dashboard SKL figures count seafarers, not reprint rows
+    j = c.get("/api/stats?year=all&basis=ujian").get_json()
+    uc_tot, uc_cetak = con.execute(
+        "SELECT COUNT(DISTINCT uc),"
+        " COUNT(DISTINCT CASE WHEN tgl_cetak IS NOT NULL THEN uc END) FROM skl").fetchone()
+    assert j["skl"]["total"] == uc_tot, f"skl total {j['skl']['total']} != {uc_tot} distinct uc"
+    assert j["skl"]["cetak"] == uc_cetak, f"skl cetak {j['skl']['cetak']} != {uc_cetak} distinct uc"
+    rows_cetak = con.execute("SELECT COUNT(*) FROM skl WHERE tgl_cetak IS NOT NULL").fetchone()[0]
+    assert j["skl"]["cetak"] < rows_cetak, "reprints still inflating the printed count"
+    print(f"SKL stat OK: {j['skl']['cetak']} seafarers printed (was {rows_cetak} rows)")
     c.get("/logout")
 
     # rate limit kicks in after FAIL_LIMIT bad attempts
