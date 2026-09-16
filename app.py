@@ -190,11 +190,13 @@ def cek():
 
     if re.fullmatch(r"\d{6,}", q):
         rows = db().execute(
-            "SELECT sc, nama, COUNT(*) n FROM peserta WHERE sc=? GROUP BY sc, nama", (q,)
+            "SELECT sc, nama, COUNT(*) n, GROUP_CONCAT(ijzh, ', ') levels"
+            " FROM peserta WHERE sc=? GROUP BY sc, nama", (q,)
         ).fetchall()
     else:
         rows = db().execute(
-            "SELECT sc, nama, COUNT(*) n FROM peserta WHERE nama LIKE ?"
+            "SELECT sc, nama, COUNT(*) n, GROUP_CONCAT(ijzh, ', ') levels"
+            " FROM peserta WHERE nama LIKE ?"
             " GROUP BY sc, nama ORDER BY nama LIMIT ?", (f"%{q.upper()}%", MAX_RESULTS + 1)
         ).fetchall()
 
@@ -263,13 +265,22 @@ def detail(sc):
     for p in peserta:
         att = [n for n in nilai if n["uc"] == p["uc"]]
         names = json.loads(att[0]["mu_names"] or "[]") if att and att[0]["mu_names"] else []
+        # earliest exam date drives the chronology; fall back to ukp1 when a
+        # level has no nilai rows yet so it still lands in the right slot
+        dates = sorted(a["tgl_ujian"] for a in att if a["tgl_ujian"])
         cards.append({
             "p": p,
             "attempts": [dict(a, mu=json.loads(a["mu"])) for a in att],
             "mu_names": names,
             "skl": skl.get(p["uc"]),
             "lulus": any(a["lulus"] for a in att),
+            "tgl": dates[0] if dates else (p["ukp1"] or ""),
+            "tgl_akhir": dates[-1] if dates else (p["ukp1"] or ""),
+            "n_ujian": len(att),
         })
+
+    # chronological: the upgrade path reads oldest level -> newest
+    cards.sort(key=lambda c: c["tgl"] or "9999")
 
     log("view", "ok", sc=sc, uc=",".join(ucs)[:200])
     return render_template("detail.html", sc=sc, nama=peserta[0]["nama"], cards=cards)

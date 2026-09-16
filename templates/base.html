@@ -85,6 +85,24 @@ tbody tr:hover{background:#f9fbff}
 .legend b{color:var(--ink);font-weight:600}
 .score{font-variant-numeric:tabular-nums} .low{color:var(--bad);font-weight:600}
 
+/* ---- riwayat tingkat ijazah (upgrade path) ---- */
+.timeline{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin-top:14px}
+.tl-step{display:flex;align-items:center;gap:10px}
+.tl-dot{width:26px;height:26px;border-radius:50%;flex:none;display:flex;
+        align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.tl-dot.pass{background:var(--ok)} .tl-dot.fail{background:var(--bad)}
+.tl-body{padding:8px 12px;background:#f9fbff;border:1px solid var(--line);
+         border-radius:6px;min-width:130px}
+.tl-arrow{color:var(--muted);font-size:18px;padding:0 2px}
+.step-no{display:inline-flex;align-items:center;justify-content:center;
+         width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;
+         font-size:12px;font-weight:700;margin-right:8px;vertical-align:2px}
+@media(max-width:620px){
+  .tl-arrow{display:none}
+  .tl-step{width:100%}
+  .tl-body{flex:1}
+}
+
 /* ---- stat strip ---- */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .stat{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--brand);

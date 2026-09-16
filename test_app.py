@@ -1,5 +1,6 @@
 """Self-check against the real ukp.db. Run: python test_app.py"""
 import os
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -77,6 +78,35 @@ with A.app.test_client() as c:
     # second factor alone must also pass (DOB is placeholder for ~15% of records)
     r = c.post(f"/verify/{sc}", data={"tgl_lahir": "", "ukp1": ukp1}, follow_redirects=True)
     assert b"Materi Uji" in r.data, "UKP1-only verify failed"
+
+    # --- progression: one seafarer code, several ijazah levels, oldest first ---
+    multi = con.execute("""
+        SELECT p.sc, MIN(p.ukp1) u1, COUNT(DISTINCT p.uc) lv
+        FROM peserta p JOIN nilai n ON n.uc = p.uc
+        WHERE p.dob_usable = 1 AND n.tgl_ujian IS NOT NULL
+        GROUP BY p.sc HAVING lv >= 3 LIMIT 1""").fetchone()
+    if multi:
+        c.get("/logout")
+        r = c.post(f"/verify/{multi['sc']}", data={"tgl_lahir": "", "ukp1": multi["u1"]},
+                   follow_redirects=True)
+        h = r.data.decode("utf-8", "replace")
+        assert "Riwayat Tingkat Ijazah" in h, "progression timeline missing"
+        # the timeline must list every level the seafarer code owns
+        steps = re.findall(r'tl-dot (?:pass|fail)">(\d+)</div>\s*<div class="tl-body">\s*<b>(\w+)</b>', h)
+        assert len(steps) == multi["lv"], f"timeline shows {len(steps)} of {multi['lv']} levels"
+        assert [int(n) for n, _ in steps] == list(range(1, multi["lv"] + 1)), "steps misnumbered"
+        # dates must run oldest -> newest
+        dates = re.findall(r'tl-body">.*?<div class="muted">\s*(\d{4}-\d{2}-\d{2})', h, re.S)
+        assert dates == sorted(dates), f"levels out of chronological order: {dates}"
+        # per-level cards carry the same ordering
+        cards = re.findall(r'step-no">(\d+)</span>(\w+)', h)
+        assert [lv for _, lv in cards] == [lv for _, lv in steps], "cards disagree with timeline"
+        print(f"progression OK: {multi['sc']} {' -> '.join(lv for _, lv in steps)}")
+        c.get("/logout")
+
+    # search results must expose the levels so the upgrade path is visible pre-verify
+    r = c.post("/cek", data={"q": sc})
+    assert b"Tingkat Ijazah" in r.data, "search results missing level column"
     c.get("/logout")
 
     # rate limit kicks in after FAIL_LIMIT bad attempts

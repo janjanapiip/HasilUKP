@@ -3,15 +3,39 @@
 
 <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
   <div><h1 style="margin:0">{{ nama }}</h1>
-    <span class="muted">Seafarer Code {{ sc }} &middot; {{ cards|length }} tingkat ijazah</span></div>
+    <span class="muted">Seafarer Code {{ sc }} &middot; {{ cards|length }} tingkat ijazah &middot;
+      {{ cards|sum(attribute='n_ujian') }} rekaman ujian</span></div>
   <a href="{{ url_for('logout') }}"><button type="button">Keluar</button></a>
 </div>
+
+{% if cards|length > 1 %}
+<div class="card">
+  <h2 style="margin-top:0">Riwayat Tingkat Ijazah</h2>
+  <p class="muted" style="margin-top:-6px">Urut dari ujian terlama ke terbaru.</p>
+  <div class="timeline">
+    {% for c in cards %}
+    <div class="tl-step">
+      <div class="tl-dot {{ 'pass' if c.lulus else 'fail' }}">{{ loop.index }}</div>
+      <div class="tl-body">
+        <b>{{ c.p.ijzh }}</b>
+        {% if c.lulus %}<span class="tag pass">LULUS</span>
+        {% else %}<span class="tag fail">BELUM LULUS</span>{% endif %}
+        <div class="muted">{{ c.tgl or '-' }}{% if c.n_ujian > 1 %}
+          &middot; {{ c.n_ujian }}x ujian{% endif %}</div>
+      </div>
+      {% if not loop.last %}<div class="tl-arrow">&rarr;</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% for c in cards %}
 <div class="card">
   <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
     <div>
-      <h2 style="margin-bottom:6px">{{ c.p.ijzh }}
+      <h2 style="margin-bottom:6px">
+        <span class="step-no">{{ loop.index }}</span>{{ c.p.ijzh }}
         {% if c.lulus %}<span class="tag pass">LULUS</span>
         {% else %}<span class="tag fail">BELUM LULUS</span>{% endif %}</h2>
       {% if c.attempts and c.attempts[0].ijzh_nama %}

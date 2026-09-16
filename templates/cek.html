@@ -21,9 +21,11 @@
   <div class="card">
     <h2>Hasil Pencarian</h2>
     <table>
-      <tr><th>Nama</th><th>Seafarer Code</th><th>Rekaman</th><th></th></tr>
+      <tr><th>Nama</th><th>Seafarer Code</th><th>Tingkat Ijazah</th><th></th></tr>
       {% for r in results %}
-      <tr><td>{{ r.nama }}</td><td>{{ r.sc }}</td><td>{{ r.n }}</td>
+      <tr><td>{{ r.nama }}</td><td>{{ r.sc }}</td>
+          <td>{{ r.levels or '-' }}
+            <span class="muted">({{ r.n }} tingkat)</span></td>
           <td><a href="{{ url_for('verify', sc=r.sc) }}">Lihat data &rarr;</a></td></tr>
       {% endfor %}
     </table>
