@@ -133,6 +133,13 @@ body{min-height:100vh;display:flex;flex-direction:column} main{flex:1}
 <nav class="navbar"><div class="wrap">
   <a href="{{ url_for('index') }}" class="{{ 'on' if request.endpoint=='index' }}">Beranda</a>
   <a href="{{ url_for('cek') }}" class="{{ 'on' if request.endpoint in ('cek','verify','detail') }}">Cek Data Peserta</a>
+  {% if is_admin() %}
+  <a href="{{ url_for('batch') }}" class="{{ 'on' if request.endpoint in ('batch','batch_xlsx') }}">Cek Massal</a>
+  <a href="{{ url_for('logout') }}" style="margin-left:auto">Keluar (admin)</a>
+  {% else %}
+  <a href="{{ url_for('login') }}" style="margin-left:auto"
+     class="{{ 'on' if request.endpoint=='login' }}">Masuk Admin</a>
+  {% endif %}
 </div></nav>
 
 <main><div class="wrap">

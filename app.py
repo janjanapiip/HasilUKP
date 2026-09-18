@@ -8,7 +8,8 @@ import secrets
 import sqlite3
 
 from flask import (Flask, abort, g, redirect, render_template, request,
-                   session, url_for)
+                   send_file, session, url_for)
+from werkzeug.security import check_password_hash
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "ukp.db")
@@ -22,6 +23,21 @@ FAIL_LIMIT = 8          # failed verifications per IP
 SC_FAIL_LIMIT = 10      # ...and per seafarer code, regardless of source IP
 WINDOW_MIN = 15         # ...within this many minutes
 MAX_RESULTS = 25
+BATCH_MAX = 30          # seafarer codes per admin batch lookup
+
+ADMIN_USER = os.environ.get("UKP_ADMIN_USER", "admin")
+# Hash only - never the password itself, this repo is public. Generate with:
+#   python -c "from werkzeug.security import generate_password_hash as h; \
+#              print(h(input('password: ')))"
+# then set UKP_ADMIN_HASH in the environment (and on Vercel).
+# Local dev reads .env.local, which is gitignored.
+if os.path.exists(os.path.join(HERE, ".env.local")):
+    for _line in open(os.path.join(HERE, ".env.local"), encoding="utf-8"):
+        if "=" in _line and not _line.lstrip().startswith("#"):
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
+
+ADMIN_HASH = os.environ.get("UKP_ADMIN_HASH", "")
 
 app = Flask(__name__)
 # ponytail: dev secret regenerates each boot (logs everyone out on restart).
@@ -296,7 +312,7 @@ def verify(sc):
 
 @app.route("/detail/<sc>")
 def detail(sc):
-    if session.get("sc") != sc:
+    if session.get("sc") != sc and not is_admin():
         return redirect(url_for("verify", sc=sc))
 
     peserta = db().execute(
@@ -348,6 +364,220 @@ def detail(sc):
 
     log("view", "ok", sc=sc, uc=",".join(ucs)[:200])
     return render_template("detail.html", sc=sc, nama=peserta[0]["nama"], cards=cards)
+
+
+def is_admin():
+    return bool(session.get("admin"))
+
+
+app.jinja_env.globals["is_admin"] = is_admin
+
+
+def admin_only(view):
+    """Gate a route behind the admin session."""
+    def wrapped(*a, **kw):
+        if not is_admin():
+            return redirect(url_for("login", next=request.path))
+        return view(*a, **kw)
+    wrapped.__name__ = view.__name__
+    return wrapped
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+    if throttled():
+        log("login", "rate_limited")
+        return render_template("login.html", error=(
+            f"Terlalu banyak percobaan gagal. Coba lagi dalam {WINDOW_MIN} menit."))
+
+    user = (request.form.get("user") or "").strip()
+    pw = request.form.get("pw") or ""
+    if not ADMIN_HASH:
+        log("login", "misconfigured")
+        return render_template("login.html", error=(
+            "Login admin belum dikonfigurasi (UKP_ADMIN_HASH belum diisi).")), 503
+    # Same failure for wrong user and wrong password: telling them which one
+    # was right confirms the username exists.
+    if user != ADMIN_USER or not check_password_hash(ADMIN_HASH, pw):
+        # reuse the bad_verify outcome so the existing rate limiter counts it
+        log("login", "bad_verify")
+        return render_template("login.html", error="Username atau password salah.")
+
+    session.clear()          # new privilege level, new session id
+    session["admin"] = True
+    session["csrf"] = secrets.token_urlsafe(32)
+    log("login", "ok")
+    nxt = request.form.get("next") or request.args.get("next") or ""
+    # only relative paths: an open redirect would let a phishing link bounce
+    # through this domain
+    return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//")
+                    else url_for("batch"))
+
+
+def parse_codes(raw):
+    """Free text -> de-duplicated seafarer codes, order preserved."""
+    seen, out = set(), []
+    for tok in re.split(r"[^0-9A-Za-z]+", raw or ""):
+        tok = tok.strip().upper()
+        if tok and tok not in seen:
+            seen.add(tok)
+            out.append(tok)
+    return out
+
+
+def batch_rows(codes):
+    """One summary row per requested code, in the order asked."""
+    rows = []
+    for sc in codes:
+        peserta = db().execute(
+            "SELECT * FROM peserta WHERE sc=? ORDER BY ukp1", (sc,)).fetchall()
+        if not peserta:
+            rows.append({"sc": sc, "found": False})
+            continue
+
+        ucs = [p["uc"] for p in peserta]
+        marks = ",".join("?" * len(ucs))
+        nilai = db().execute(
+            f"SELECT uc, ijzh, tgl_ujian, lulus FROM nilai WHERE uc IN ({marks})", ucs
+        ).fetchall()
+        skl = db().execute(
+            f"SELECT uc, tgl_cetak FROM skl WHERE uc IN ({marks})"
+            " ORDER BY tgl_cetak IS NOT NULL, tgl_cetak", ucs).fetchall()
+        newest = {}
+        for s in skl:                      # oldest-first, so newest wins
+            newest[s["uc"]] = s["tgl_cetak"]
+
+        # chronological upgrade path, same rule as the detail page
+        by_uc = {}
+        for n in nilai:
+            by_uc.setdefault(n["uc"], []).append(n)
+        steps = []
+        for p in peserta:
+            att = by_uc.get(p["uc"], [])
+            dates = sorted(a["tgl_ujian"] for a in att if a["tgl_ujian"])
+            steps.append({
+                "ijzh": p["ijzh"],
+                "tgl": dates[0] if dates else (p["ukp1"] or ""),
+                "lulus": any(a["lulus"] for a in att),
+                "cetak": newest.get(p["uc"]),
+                "has_skl": p["uc"] in newest,
+            })
+        steps.sort(key=lambda s: s["tgl"] or "9999")
+
+        last = steps[-1] if steps else {}
+        p0 = peserta[0]
+        ttl = " / ".join(x for x in (p0["tpt_lahir"],
+                                     p0["tgl_lahir"] if p0["dob_usable"] else None) if x)
+        rows.append({
+            "sc": sc, "found": True, "nama": p0["nama"],
+            "ttl": ttl or "-",
+            "tpt_lahir": p0["tpt_lahir"] or "",
+            "tgl_lahir": p0["tgl_lahir"] if p0["dob_usable"] else "",
+            "diklat": p0["diklat"] or "",
+            "riwayat": " > ".join(s["ijzh"] for s in steps),
+            "n_level": len(steps),
+            "n_ujian": len(nilai),
+            "ijzh_akhir": last.get("ijzh", ""),
+            "tgl_akhir": last.get("tgl", ""),
+            "lulus_akhir": last.get("lulus", False),
+            "skl_status": skl_label(last),
+            "skl_tgl": last.get("cetak") or "",
+        })
+    return rows
+
+
+def skl_label(step):
+    """Same four states the detail page shows, as plain text for Excel."""
+    if not step:
+        return "-"
+    if step.get("cetak"):
+        return "SUDAH DICETAK"
+    if step.get("has_skl"):
+        return "TERDAFTAR, BELUM DICETAK"
+    return "BELUM TERBIT" if step.get("lulus") else "TIDAK ADA"
+
+
+@app.route("/batch", methods=["GET", "POST"])
+@admin_only
+def batch():
+    if request.method == "GET":
+        return render_template("batch.html", maks=BATCH_MAX)
+
+    raw = request.form.get("codes") or ""
+    codes = parse_codes(raw)
+    if not codes:
+        return render_template("batch.html", maks=BATCH_MAX,
+                               error="Masukkan minimal satu kode pelaut.", raw=raw)
+    over = len(codes) > BATCH_MAX
+    codes = codes[:BATCH_MAX]
+    rows = batch_rows(codes)
+    log("batch", "ok", q=f"{len(codes)} codes")
+    return render_template(
+        "batch.html", maks=BATCH_MAX, rows=rows, raw=raw,
+        ketemu=sum(1 for r in rows if r["found"]),
+        error=(f"Lebih dari {BATCH_MAX} kode; hanya {BATCH_MAX} pertama diproses."
+               if over else None))
+
+
+@app.route("/batch.xlsx", methods=["POST"])
+@admin_only
+def batch_xlsx():
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    codes = parse_codes(request.form.get("codes") or "")[:BATCH_MAX]
+    if not codes:
+        return redirect(url_for("batch"))
+    rows = batch_rows(codes)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rekap Peserta"
+    head = ["No", "Kode Pelaut", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir",
+            "Jenis Kelamin", "Riwayat Tingkat Ijazah", "Ijazah Terakhir",
+            "Tanggal Ujian Terakhir", "Status SKL", "Tanggal Cetak SKL",
+            "Jumlah Ujian", "Diklat"]
+    ws.append(head)
+    for i, r in enumerate(rows, 1):
+        if not r["found"]:
+            ws.append([i, r["sc"], "TIDAK DITEMUKAN"] + [""] * (len(head) - 3))
+            continue
+        ws.append([
+            i, r["sc"], r["nama"], r["tpt_lahir"], r["tgl_lahir"],
+            "",                      # Jenis Kelamin: not in the source workbooks
+            r["riwayat"], r["ijzh_akhir"], r["tgl_akhir"],
+            r["skl_status"], r["skl_tgl"], r["n_ujian"], r["diklat"],
+        ])
+
+    hdr_fill = PatternFill("solid", fgColor="0E1937")
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = hdr_fill
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    widths = [5, 14, 30, 18, 13, 13, 30, 14, 15, 24, 15, 11, 10]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(head))}{ws.max_row}"
+
+    note = ws.max_row + 2
+    ws.cell(note, 1, "Jenis Kelamin tidak tersedia pada data sumber "
+                     "(DataPeserta tidak memuat kolom tersebut).").font = Font(italic=True, size=9)
+    ws.cell(note + 1, 1, f"Dibuat {datetime.datetime.now():%Y-%m-%d %H:%M} "
+                         f"- PUKP-3 Wilayah I Jakarta").font = Font(italic=True, size=9)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    log("batch", "export", q=f"{len(codes)} codes")
+    return send_file(
+        buf, as_attachment=True,
+        download_name=f"rekap-peserta-{datetime.date.today():%Y%m%d}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 @app.route("/logout")

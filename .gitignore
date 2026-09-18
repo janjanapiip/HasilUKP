@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 exceptions.csv
+.env.local
+.vercel
 _page.html
 _dash.js
 _*.txt

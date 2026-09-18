@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block body %}
+<h1 class="h1">Cek Massal Peserta</h1>
+<p class="sub">Tempel sampai {{ maks }} kode pelaut sekaligus &mdash; dipisah spasi,
+   koma, atau baris baru. Tanpa verifikasi identitas (akses administrator).</p>
+
+{% if error %}<p class="err" style="margin-top:12px">{{ error }}</p>{% endif %}
+
+<div class="card" style="margin-top:16px">
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <textarea name="codes" rows="5" style="width:100%;font-family:ui-monospace,monospace"
+      placeholder="6212513533&#10;6211811760, 6212014865&#10;6211716503" autofocus>{{ raw or '' }}</textarea>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+      <button>Cek Sekarang</button>
+      {% if rows %}
+      <button formaction="{{ url_for('batch_xlsx') }}" formmethod="post" class="ghost">
+        Unduh Excel ({{ rows|length }} baris)</button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if rows %}
+<p class="muted" style="margin-top:16px">
+  {{ ketemu }} dari {{ rows|length }} kode ditemukan.</p>
+<div class="card" style="margin-top:8px;overflow-x:auto">
+  <table>
+    <thead><tr>
+      <th>No</th><th>Kode Pelaut</th><th>Nama Lengkap</th>
+      <th>Tempat, Tanggal Lahir</th><th>Riwayat Tingkat Ijazah</th><th>Status SKL</th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% if r.found %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('detail', sc=r.sc) }}">{{ r.sc }}</a></td>
+        <td>{{ r.nama }}</td>
+        <td>{{ r.ttl }}</td>
+        <td>{{ r.riwayat }}
+          {% if r.n_level > 1 %}<span class="muted">({{ r.n_level }} tingkat)</span>{% endif %}</td>
+        <td>
+          {% if r.skl_status == 'SUDAH DICETAK' %}
+            <span class="tag ok">SUDAH DICETAK</span><br>
+            <span class="muted">{{ r.skl_tgl }}</span>
+          {% elif r.skl_status == 'TERDAFTAR, BELUM DICETAK' %}
+            <span class="tag warn">TERDAFTAR, BELUM DICETAK</span>
+          {% elif r.skl_status == 'BELUM TERBIT' %}
+            <span class="tag warn">BELUM TERBIT</span>
+          {% else %}
+            <span class="tag">TIDAK ADA</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr class="muted">
+        <td>{{ loop.index }}</td><td>{{ r.sc }}</td>
+        <td colspan="4">Tidak ditemukan</td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted" style="margin-top:10px;font-size:12.5px">
+  Kolom <b>Jenis Kelamin</b> tersedia di file Excel namun kosong &mdash;
+  data sumber (DataPeserta) tidak memuat kolom tersebut.</p>
+{% endif %}
+{% endblock %}

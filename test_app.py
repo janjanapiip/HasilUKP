@@ -39,7 +39,10 @@ with A.app.test_client() as c:
     def _post(url, data=None, **kw):
         data = dict(data or {})
         if "csrf" not in data:
-            page = c.get(url if url.startswith("/verify") else "/cek")
+            # mint the token from the page that owns this form
+            src = url if url.startswith(("/verify", "/login")) else (
+                "/batch" if url.startswith("/batch") else "/cek")
+            page = c.get(src)
             m = re.search(r'name="csrf" value="([^"]+)"', page.get_data(as_text=True))
             if m:
                 data["csrf"] = m.group(1)
@@ -201,7 +204,37 @@ with A.app.test_client() as c:
     con.execute("DELETE FROM access_log WHERE outcome='bad_verify'")
     con.commit()
 
+    # --- admin: guest is locked out, admin gets batch + export ---
+    c.get("/logout")
+    assert c.get("/batch").status_code == 302, "batch not gated for guests"
+    assert _raw_post("/batch.xlsx", data={"codes": sc}).status_code in (302, 400), \
+        "batch export not gated for guests"
+    assert b"Cek Massal" not in c.get("/").data, "admin nav leaked to guests"
+
+    if A.ADMIN_HASH:
+        r = c.post("/login", data={"user": A.ADMIN_USER, "pw": "definitely-wrong"})
+        assert "salah" in r.get_data(as_text=True), "bad password accepted"
+        # real password comes from the environment, never hardcoded here
+        pw = os.environ.get("UKP_ADMIN_PW")
+        if pw:
+            r = c.post("/login", data={"user": A.ADMIN_USER, "pw": pw})
+            assert r.status_code == 302, "correct admin login rejected"
+            codes = f"{sc} {multi['sc'] if multi else ''} 9999999999"
+            h = c.post("/batch", data={"codes": codes}).get_data(as_text=True)
+            assert nama in h, "batch missing a known seafarer"
+            assert "Tidak ditemukan" in h, "batch does not flag unknown codes"
+            x = c.post("/batch.xlsx", data={"codes": codes})
+            assert x.status_code == 200 and len(x.data) > 3000, "xlsx export failed"
+            assert x.headers["Content-Disposition"].startswith("attachment"), \
+                "xlsx not sent as a download"
+            print(f"admin OK: batch + xlsx export ({len(x.data)} bytes)")
+            c.get("/logout")
+            assert c.get("/batch").status_code == 302, "logout did not drop admin"
+    print("admin gating OK: guests cannot reach batch routes")
+
     # rate limit kicks in after FAIL_LIMIT bad attempts
+    con.execute("DELETE FROM access_log WHERE outcome='bad_verify'")
+    con.commit()
     for _ in range(A.FAIL_LIMIT):
         c.post(f"/verify/{sc}", data={"tgl_lahir": "1801-01-01", "ukp1": ""})
     r = c.post(f"/verify/{sc}", data={"tgl_lahir": dob, "ukp1": ""})
