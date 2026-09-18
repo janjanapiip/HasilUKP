@@ -4,6 +4,7 @@
   <h2>Verifikasi Identitas</h2>
   <p>Data atas nama <b>{{ nama }}</b><br><span class="muted">Seafarer Code {{ sc }}</span></p>
   <form method="post" style="margin-top:16px">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
     <p><label>Tanggal lahir<br>
       <input name="tgl_lahir" style="width:100%" placeholder="1996-06-05"></label></p>
     <p><label>Tanggal UKP pertama (UKP1)<br>

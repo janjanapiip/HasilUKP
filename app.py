@@ -1,12 +1,14 @@
 """UKP self-service lookup. Run: python app.py  (needs ukp.db from etl.py)"""
 import datetime
+import hmac
 import json
 import os
 import re
+import secrets
 import sqlite3
 
-from flask import (Flask, g, redirect, render_template, request, session,
-                   url_for)
+from flask import (Flask, abort, g, redirect, render_template, request,
+                   session, url_for)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "ukp.db")
@@ -17,13 +19,51 @@ LOG_DB = os.path.join(os.environ.get("TMPDIR", "/tmp"), "access_log.db") \
     if os.environ.get("VERCEL") else DB
 
 FAIL_LIMIT = 8          # failed verifications per IP
+SC_FAIL_LIMIT = 10      # ...and per seafarer code, regardless of source IP
 WINDOW_MIN = 15         # ...within this many minutes
 MAX_RESULTS = 25
 
 app = Flask(__name__)
 # ponytail: dev secret regenerates each boot (logs everyone out on restart).
 # Set UKP_SECRET in the environment before deploying behind more than one worker.
+# With CSRF on, a missing UKP_SECRET also means tokens minted by one Vercel
+# lambda are rejected by the next one, so POSTs fail intermittently.
 app.secret_key = os.environ.get("UKP_SECRET") or os.urandom(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Local dev is plain http; only demand TLS where it actually exists.
+    SESSION_COOKIE_SECURE=bool(os.environ.get("VERCEL")),
+)
+
+
+def csrf_token():
+    if not session.get("csrf"):
+        session["csrf"] = secrets.token_urlsafe(32)
+    return session["csrf"]
+
+
+app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+@app.before_request
+def csrf_protect():
+    """Reject cross-site POSTs. Without this, a hidden form on any page can
+    spend a visitor's verify attempts and lock their IP out of the service."""
+    if request.method != "POST":
+        return
+    good = session.get("csrf")
+    # Not compare_digest(sent, session.get("csrf", "")): that is True when both
+    # are empty, so a session with no token would pass every check.
+    if not good or not hmac.compare_digest(request.form.get("csrf", ""), good):
+        log(request.endpoint or "?", "csrf_reject")
+        abort(400)
+
+
+@app.errorhandler(400)
+def _stale_form(_):
+    return render_template("error.html", pesan=(
+        "Halaman sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.")), 400
 
 
 def db():
@@ -72,7 +112,11 @@ def log(action, outcome, q=None, sc=None, uc=None):
         pass  # read-only fs on Vercel cold start edge case
 
 
-def throttled():
+def throttled(sc=None):
+    """True when this IP has failed too often, or when one seafarer code is
+    being guessed at from anywhere. The per-sc limit matters because the
+    per-IP counter is trivially reset with a new IP, and on Vercel it lives
+    in per-instance /tmp that a cold start wipes."""
     since = (datetime.datetime.now()
              - datetime.timedelta(minutes=WINDOW_MIN)).isoformat(timespec="seconds")
     try:
@@ -80,7 +124,15 @@ def throttled():
             "SELECT COUNT(*) FROM access_log WHERE ip=? AND ts>? AND outcome='bad_verify'",
             (client_ip(), since),
         ).fetchone()[0]
-        return n >= FAIL_LIMIT
+        if n >= FAIL_LIMIT:
+            return True
+        if sc:
+            m = log_db().execute(
+                "SELECT COUNT(*) FROM access_log"
+                " WHERE sc=? AND ts>? AND outcome='bad_verify'", (sc, since),
+            ).fetchone()[0]
+            return m >= SC_FAIL_LIMIT
+        return False
     except sqlite3.OperationalError:
         return False
 
@@ -219,7 +271,7 @@ def verify(sc):
 
     if request.method == "GET":
         return render_template("verify.html", sc=sc, nama=nama)
-    if throttled():
+    if throttled(sc):
         log("verify", "rate_limited", sc=sc)
         return render_template("verify.html", sc=sc, nama=nama, error=(
             f"Terlalu banyak percobaan gagal. Coba lagi dalam {WINDOW_MIN} menit."))

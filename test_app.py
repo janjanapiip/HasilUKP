@@ -31,6 +31,22 @@ sc, nama, dob, ukp1 = row["sc"], row["nama"], row["tgl_lahir"], row["ukp1"]
 print(f"fixture: {nama} sc={sc} dob={dob} ukp1={ukp1}")
 
 with A.app.test_client() as c:
+    # CSRF is on: every POST needs a token from a prior GET. Wrap post() once
+    # rather than editing 20 call sites - the wrapper walks the real
+    # GET-then-submit path a browser takes, so the guard stays exercised.
+    _raw_post = c.post
+
+    def _post(url, data=None, **kw):
+        data = dict(data or {})
+        if "csrf" not in data:
+            page = c.get(url if url.startswith("/verify") else "/cek")
+            m = re.search(r'name="csrf" value="([^"]+)"', page.get_data(as_text=True))
+            if m:
+                data["csrf"] = m.group(1)
+        return _raw_post(url, data=data, **kw)
+
+    c.post = _post
+
     before = con.execute("SELECT COUNT(*) FROM access_log").fetchone()[0]
 
     r = c.get("/")
@@ -156,6 +172,35 @@ with A.app.test_client() as c:
     assert blank_ujian == 0, f"{blank_ujian} exam rows have no date - date parsing regressed?"
     c.get("/logout")
 
+    # --- CSRF: a POST without the token is refused ---
+    # This is the cross-site request an attacker's hidden form would send.
+    r = _raw_post(f"/verify/{sc}", data={"tgl_lahir": dob, "ukp1": ""})
+    assert r.status_code == 400, f"POST without CSRF token accepted ({r.status_code})"
+    r = _raw_post(f"/verify/{sc}", data={"tgl_lahir": dob, "csrf": "wrong-token"})
+    assert r.status_code == 400, "POST with a forged CSRF token accepted"
+    assert "kedaluwarsa" in r.get_data(as_text=True), "no friendly message on stale form"
+    # ...and the refusal did NOT hand out a session
+    assert c.get(f"/detail/{sc}").status_code == 302, "CSRF-refused POST still logged in"
+    print("CSRF OK: unsigned and forged POSTs rejected with 400")
+
+    # --- per-sc rate limit: rotating IPs must not buy more guesses ---
+    # Clear only bad_verify: the outcome-coverage assertion below still needs
+    # the 'ok'/'not_found' rows this run already wrote.
+    con.execute("DELETE FROM access_log WHERE outcome='bad_verify'")
+    con.commit()
+    blocked_at = None
+    for i in range(1, A.SC_FAIL_LIMIT + 4):
+        h = c.post(f"/verify/{sc}", data={"tgl_lahir": "1801-01-01", "ukp1": ""},
+                   headers={"X-Forwarded-For": f"203.0.113.{i}"}).data.decode("utf-8", "replace")
+        if "Terlalu banyak" in h:
+            blocked_at = i
+            break
+    assert blocked_at, f"{A.SC_FAIL_LIMIT}+ guesses from rotating IPs never blocked"
+    assert blocked_at <= A.SC_FAIL_LIMIT + 1, f"blocked too late (attempt {blocked_at})"
+    print(f"per-sc limit OK: rotating-IP guessing blocked at attempt {blocked_at}")
+    con.execute("DELETE FROM access_log WHERE outcome='bad_verify'")
+    con.commit()
+
     # rate limit kicks in after FAIL_LIMIT bad attempts
     for _ in range(A.FAIL_LIMIT):
         c.post(f"/verify/{sc}", data={"tgl_lahir": "1801-01-01", "ukp1": ""})
@@ -190,7 +235,10 @@ with A.app.test_client() as c:
     p = con.execute("SELECT tgl_lahir, ukp1, dob_usable FROM peserta WHERE sc=?"
                     " AND ukp1 IS NOT NULL LIMIT 1", (sc2,)).fetchone()
     if p:
-        r = c.post(f"/verify/{sc2}", data={"tgl_lahir": "", "ukp1": p["ukp1"]},
+        # fresh client: mint a token the same way a browser would
+        page = c.get(f"/verify/{sc2}").get_data(as_text=True)
+        tok = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
+        r = c.post(f"/verify/{sc2}", data={"tgl_lahir": "", "ukp1": p["ukp1"], "csrf": tok},
                    follow_redirects=True)
         assert b"Materi Uji" in r.data, "repaired record not viewable in UI"
         print("repaired record renders for its owner")

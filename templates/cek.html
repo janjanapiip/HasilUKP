@@ -7,6 +7,7 @@
 
 <div class="card" style="margin-top:16px">
   <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <input name="q" value="{{ q or '' }}" style="flex:1;min-width:260px"
              placeholder="Ketik nama atau seafarer code (mis. 6212225863)" autofocus>

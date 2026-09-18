@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width:520px;margin:0 auto;text-align:center">
+  <h2>Terjadi Kesalahan</h2>
+  <p class="muted">{{ pesan }}</p>
+  <p style="margin-top:16px">
+    <a href="{{ url_for('cek') }}">&larr; Kembali ke Cek Data Peserta</a></p>
+</div>
+{% endblock %}
