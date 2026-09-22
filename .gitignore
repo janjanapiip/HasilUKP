@@ -9,4 +9,8 @@ _dash.js
 _*.txt
 _*.py
 
+# generated report output - reproducible via report_no_retake.py / the /filter export
+belum-lulus-belum-mengulang-*.xlsx
+rekap-*.xlsx
+
 .vercel

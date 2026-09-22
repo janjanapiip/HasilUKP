@@ -499,6 +499,157 @@ def skl_label(step):
     return "BELUM TERBIT" if step.get("lulus") else "TIDAK ADA"
 
 
+FILTER_WEB_MAX = 300      # rows rendered in the browser
+FILTER_XLSX_MAX = 5000    # hard ceiling on a single export
+
+STATUS_OPTS = [
+    ("semua", "Semua status"),
+    ("lulus", "Sudah lulus"),
+    ("belum_lulus", "Belum lulus"),
+    ("belum_mengulang", "Belum lulus & belum mengulang"),
+    ("belum_skl", "Lulus tapi SKL belum terbit"),
+]
+STATUS_LABEL = dict(STATUS_OPTS)
+
+
+def filter_opts():
+    """Dropdown contents read from the data, so they cannot drift from it."""
+    return {
+        "diklat": [r[0] for r in db().execute(
+            "SELECT DISTINCT diklat FROM peserta WHERE COALESCE(diklat,'')<>''"
+            " ORDER BY diklat")],
+        "ijzh": [r[0] for r in db().execute(
+            "SELECT DISTINCT ijzh FROM peserta WHERE COALESCE(ijzh,'')<>''"
+            " ORDER BY ijzh")],
+        "tahun": [r[0] for r in db().execute(
+            "SELECT DISTINCT substr(tgl_ujian,1,4) y FROM nilai"
+            " WHERE tgl_ujian IS NOT NULL ORDER BY y DESC")],
+        "status": STATUS_OPTS,
+    }
+
+
+def filter_rows(diklat="", ijzh="", tahun="", status="semua", limit=FILTER_XLSX_MAX):
+    """Registrations (one row per seafarer per ijazah level) matching a filter.
+
+    The unit is the registration, not the person: someone who failed two levels
+    is two rows, which is what a follow-up list needs. 'belum_mengulang' counts
+    a retake whether it came back as another attempt on the same registration
+    or as a fresh re-registration, so nobody who did return is listed."""
+    where, args = ["1=1"], []
+    if diklat:
+        where.append("p.diklat=?")
+        args.append(diklat)
+    if ijzh:
+        where.append("p.ijzh=?")
+        args.append(ijzh)
+
+    having, hargs = [], []
+    if status == "lulus":
+        having.append("SUM(n.lulus)>0")
+    elif status in ("belum_lulus", "belum_mengulang"):
+        having.append("SUM(n.lulus)=0")
+    elif status == "belum_skl":
+        having.append("SUM(n.lulus)>0 AND s.skl_n IS NULL")
+    if tahun:
+        having.append("substr(MAX(n.tgl_ujian),1,4)=?")
+        hargs.append(tahun)
+
+    inner = f"""
+        SELECT p.uc, p.sc, p.nama, p.tpt_lahir, p.tgl_lahir, p.dob_usable,
+               p.diklat, p.ijzh, COUNT(n.id) att, MAX(n.tgl_ujian) last_ex,
+               SUM(n.lulus) pass_n, s.cetak, s.skl_n
+        FROM peserta p JOIN nilai n ON n.uc = p.uc
+        LEFT JOIN (SELECT uc, MAX(tgl_cetak) cetak, COUNT(*) skl_n
+                   FROM skl GROUP BY uc) s ON s.uc = p.uc
+        WHERE {' AND '.join(where)}
+        GROUP BY p.uc
+        {'HAVING ' + ' AND '.join(having) if having else ''}"""
+
+    sql, a = inner, args + hargs
+    if status == "belum_mengulang":
+        # No later exam at the same level, counting re-registrations too.
+        sql = f"""SELECT * FROM ({inner}) f WHERE NOT EXISTS (
+                    SELECT 1 FROM peserta p2 JOIN nilai n2 ON n2.uc = p2.uc
+                    WHERE p2.sc = f.sc AND p2.ijzh = f.ijzh
+                      AND n2.tgl_ujian > f.last_ex)"""
+        sql += " ORDER BY f.last_ex DESC, f.nama LIMIT ?"
+    else:
+        sql = f"SELECT * FROM ({inner}) ORDER BY last_ex DESC, nama LIMIT ?"
+
+    ref = {r["ijzh"]: r["deskripsi"] for r in db().execute("SELECT * FROM ref_ijzh")}
+    out = []
+    for r in db().execute(sql, a + [limit]):
+        lulus = bool(r["pass_n"])
+        step = {"cetak": r["cetak"], "has_skl": bool(r["skl_n"]), "lulus": lulus}
+        out.append({
+            "sc": r["sc"], "nama": r["nama"], "diklat": r["diklat"] or "",
+            "ijzh": r["ijzh"], "ijzh_nama": ref.get(r["ijzh"], ""),
+            "ttl": ", ".join(x for x in (
+                r["tpt_lahir"], r["tgl_lahir"] if r["dob_usable"] else None) if x) or "-",
+            "att": r["att"], "last_ex": r["last_ex"] or "",
+            "lulus": lulus, "status": "LULUS" if lulus else "BELUM LULUS",
+            "skl_status": skl_label(step), "skl_tgl": r["cetak"] or "",
+        })
+    return out
+
+
+def filter_count(diklat="", ijzh="", tahun="", status="semua"):
+    """Total matches, ignoring the display limit. Only called when the page
+    truncates, so the common path stays one query."""
+    return len(filter_rows(diklat, ijzh, tahun, status, limit=10 ** 9))
+
+
+def _xlsx(title, head, widths, data, notes=()):
+    """One formatted sheet in a workbook. Shared by both export paths."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rekap"
+    ws.append([title])
+    ws["A1"].font = Font(bold=True, size=13, color="0E1937")
+    ws.append([f"Dibuat {datetime.datetime.now():%Y-%m-%d %H:%M} "
+               f"\u00b7 {len(data)} baris \u00b7 PUKP-3 Wilayah I Jakarta"])
+    ws["A2"].font = Font(italic=True, size=9, color="5B6B85")
+    ws.append([])
+    ws.append(head)
+    hr = ws.max_row
+    for row in data:
+        ws.append(row)
+
+    fill = PatternFill("solid", fgColor="0E1937")
+    for c in ws[hr]:
+        c.font = Font(bold=True, color="FFFFFF", size=10)
+        c.fill = fill
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[hr].height = 30
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = f"A{hr + 1}"
+    ws.auto_filter.ref = f"A{hr}:{get_column_letter(len(head))}{ws.max_row}"
+
+    for n in notes:
+        ws.append([])
+        ws.append([n])
+        ws.cell(ws.max_row, 1).font = Font(italic=True, size=9, color="5B6B85")
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _filter_title(f):
+    bits = [STATUS_LABEL.get(f.get("status") or "semua", "")]
+    for k, pre in (("diklat", ""), ("ijzh", "tingkat "), ("tahun", "tahun ")):
+        if f.get(k):
+            bits.append(pre + f[k])
+    return "REKAP PESERTA - " + " \u00b7 ".join(b for b in bits if b).upper()
+
+
 @app.route("/batch", methods=["GET", "POST"])
 @admin_only
 def batch():
@@ -577,6 +728,74 @@ def batch_xlsx():
     return send_file(
         buf, as_attachment=True,
         download_name=f"rekap-peserta-{datetime.date.today():%Y%m%d}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.route("/filter", methods=["GET", "POST"])
+@admin_only
+def filter_view():
+    """Build a list from dropdowns instead of pasted codes."""
+    f = {k: (request.values.get(k) or "").strip()
+         for k in ("diklat", "ijzh", "tahun")}
+    f["status"] = (request.values.get("status") or "semua").strip()
+    if f["status"] not in STATUS_LABEL:
+        f["status"] = "semua"
+
+    opts = filter_opts()
+    if request.method == "GET" and not request.args:
+        return render_template("filter.html", opts=opts, f=f)
+
+    # Ask for one more than we show, so "ada lagi" is known without a 2nd query
+    rows = filter_rows(**f, limit=FILTER_WEB_MAX + 1)
+    more = len(rows) > FILTER_WEB_MAX
+    total = filter_count(**f) if more else len(rows)
+    log("filter", "ok", q=f"{f['status']}/{f['diklat']}/{f['ijzh']}/{f['tahun']}")
+    return render_template("filter.html", opts=opts, f=f, rows=rows[:FILTER_WEB_MAX],
+                           more=more, total=total, shown=min(len(rows), FILTER_WEB_MAX))
+
+
+@app.route("/filter.xlsx", methods=["POST"])
+@admin_only
+def filter_xlsx():
+    f = {k: (request.form.get(k) or "").strip()
+         for k in ("diklat", "ijzh", "tahun")}
+    f["status"] = (request.form.get("status") or "semua").strip()
+    if f["status"] not in STATUS_LABEL:
+        f["status"] = "semua"
+
+    rows = filter_rows(**f, limit=FILTER_XLSX_MAX)
+    if not rows:
+        return redirect(url_for("filter_view", **f))
+
+    head = ["No", "Kode Pelaut", "Nama Lengkap", "Tempat, Tanggal Lahir",
+            "Lembaga Diklat", "Tingkat Ijazah", "Keterangan Ijazah",
+            "Jumlah Ujian", "Ujian Terakhir", "Status Kelulusan",
+            "Status SKL", "Tanggal Cetak SKL"]
+    widths = [5, 14, 30, 26, 13, 10, 42, 8, 13, 15, 24, 15]
+    data = [[i, r["sc"], r["nama"], r["ttl"], r["diklat"], r["ijzh"],
+             r["ijzh_nama"], r["att"], r["last_ex"], r["status"],
+             r["skl_status"], r["skl_tgl"]]
+            for i, r in enumerate(rows, 1)]
+
+    notes = [
+        "Belum lulus = seluruh percobaan pada registrasi tersebut tidak lulus "
+        "(ada materi di bawah 70).",
+        "Belum mengulang = tidak ada ujian berikutnya pada tingkat ijazah yang "
+        "sama, baik sebagai ulangan maupun registrasi baru.",
+        "Satu baris = satu registrasi tingkat ijazah; peserta dapat muncul "
+        "lebih dari sekali bila menempuh lebih dari satu tingkat.",
+    ]
+    if len(rows) >= FILTER_XLSX_MAX:
+        notes.insert(0, f"PERHATIAN: hasil dipotong pada {FILTER_XLSX_MAX} baris. "
+                        f"Persempit filter untuk data lengkap.")
+
+    buf = _xlsx(_filter_title(f), head, widths, data, notes)
+    bits = [f[k] for k in ("status", "diklat", "ijzh", "tahun") if f[k]]
+    log("filter", "export", q=f"{len(rows)} rows")
+    return send_file(
+        buf, as_attachment=True,
+        download_name=f"rekap-{'-'.join(bits) or 'semua'}-"
+                      f"{datetime.date.today():%Y%m%d}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
