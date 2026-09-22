@@ -53,9 +53,12 @@
 {% if rows is defined %}
   {% if rows %}
   <p class="muted" style="margin-top:16px">
-    Menampilkan {{ shown }} dari {{ total }} registrasi.
-    {% if more %}<b>Daftar dipotong</b> &mdash; unduh Excel untuk data lengkap
-      (maks 5.000 baris), atau persempit filter.{% endif %}
+    Menampilkan <b>{{ first }}&ndash;{{ last }}</b> dari <b>{{ total }}</b> registrasi
+    &middot; halaman {{ page }} dari {{ pages }}.
+    {% if total > xlsx_max %}
+      <br>Unduhan Excel dibatasi {{ xlsx_max }} baris teratas &mdash; persempit
+      filter bila perlu data lengkap.
+    {% endif %}
   </p>
   <div class="card" style="margin-top:8px;overflow-x:auto">
     <table>
@@ -67,7 +70,7 @@
       <tbody>
       {% for r in rows %}
       <tr>
-        <td>{{ loop.index }}</td>
+        <td>{{ first + loop.index0 }}</td>
         <td><a href="{{ url_for('detail', sc=r.sc) }}">{{ r.sc }}</a></td>
         <td>{{ r.nama }}</td>
         <td>{{ r.diklat }}</td>
@@ -93,6 +96,44 @@
       </tbody>
     </table>
   </div>
+
+  {% if pages > 1 %}
+  {% set qs = {'diklat': f.diklat, 'ijzh': f.ijzh, 'tahun': f.tahun, 'status': f.status} %}
+  <nav class="pager" style="margin-top:14px">
+    {% if page > 1 %}
+      <a href="{{ url_for('filter_view', page=1, **qs) }}">&laquo; Awal</a>
+      <a href="{{ url_for('filter_view', page=page-1, **qs) }}">&lsaquo; Sebelumnya</a>
+    {% else %}
+      <span class="off">&laquo; Awal</span><span class="off">&lsaquo; Sebelumnya</span>
+    {% endif %}
+
+    {# a short window around the current page, not all 297 of them #}
+    {% set lo = [1, page - 2]|max %}
+    {% set hi = [pages, page + 2]|min %}
+    {% if lo > 1 %}<span class="gap">&hellip;</span>{% endif %}
+    {% for p in range(lo, hi + 1) %}
+      {% if p == page %}<span class="cur">{{ p }}</span>
+      {% else %}<a href="{{ url_for('filter_view', page=p, **qs) }}">{{ p }}</a>{% endif %}
+    {% endfor %}
+    {% if hi < pages %}<span class="gap">&hellip;</span>{% endif %}
+
+    {% if page < pages %}
+      <a href="{{ url_for('filter_view', page=page+1, **qs) }}">Berikutnya &rsaquo;</a>
+      <a href="{{ url_for('filter_view', page=pages, **qs) }}">Akhir &raquo;</a>
+    {% else %}
+      <span class="off">Berikutnya &rsaquo;</span><span class="off">Akhir &raquo;</span>
+    {% endif %}
+
+    <form method="get" class="jump">
+      {% for k, v in qs.items() %}{% if v %}
+      <input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+      <label>Ke halaman
+        <input type="number" name="page" min="1" max="{{ pages }}" value="{{ page }}"></label>
+      <button class="ghost">Buka</button>
+    </form>
+  </nav>
+  {% endif %}
+
   <p class="muted" style="margin-top:10px;font-size:12.5px">
     Satu baris = satu registrasi tingkat ijazah. Peserta yang menempuh beberapa
     tingkat muncul lebih dari sekali.</p>
@@ -100,4 +141,21 @@
   <p class="muted" style="margin-top:16px">Tidak ada data yang cocok dengan filter ini.</p>
   {% endif %}
 {% endif %}
+
+<style>
+.pager{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pager a,.pager .cur,.pager .off,.pager .gap{
+  padding:5px 10px;border:1px solid var(--line,#e3e8f0);border-radius:6px;
+  font-size:13px;text-decoration:none;line-height:1.4}
+.pager a{color:var(--brand,#0652e9);background:#fff}
+.pager a:hover{background:#f2f6ff;border-color:var(--brand,#0652e9)}
+.pager .cur{background:var(--brand,#0652e9);border-color:var(--brand,#0652e9);
+  color:#fff;font-weight:600}
+.pager .off{color:#b3bdcc;background:#fafbfd}
+.pager .gap{border:0;padding:5px 2px;color:#8b98ad}
+.pager .jump{display:flex;align-items:center;gap:6px;margin-left:auto}
+.pager .jump input{width:72px;padding:4px 6px}
+.pager .jump label{font-size:13px;color:var(--muted,#5b6b85);
+  display:flex;align-items:center;gap:6px}
+</style>
 {% endblock %}

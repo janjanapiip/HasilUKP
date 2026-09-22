@@ -151,12 +151,48 @@ print(f"8. combined filter     : AMC+PASN3+belum_lulus = {len(combo)} "
 assert keys(rows(ijzh="PASN3", diklat="AMC", status="belum_lulus")) == keys(combo), \
     "filter order changes the result"
 
-# ---------------------------------------------------------------- 9. limit
+# ---------------------------------------------------------------- 9. paging
 lim = A.filter_rows(status="belum_mengulang", limit=10)
 assert len(lim) == 10, f"limit ignored: got {len(lim)}"
 assert keys(lim) <= keys(bm), "limited page contains rows outside the full set"
 assert A.filter_count(status="belum_mengulang") == len(bm), "filter_count disagrees"
-print(f"9. limit + count       : limit=10 honoured, filter_count={len(bm)}")
+
+# Walking every page must reproduce the full set exactly - no row seen twice,
+# none missed. This is the failure paging actually has, so test it on real data.
+per, seen, order = 100, [], []
+for pg in range(0, 10):
+    chunk = A.filter_rows(status="belum_mengulang", limit=per, offset=pg * per)
+    if not chunk:
+        break
+    assert len(chunk) <= per, f"page {pg} returned {len(chunk)} rows, max {per}"
+    seen.extend(keys(chunk))
+    order.extend(r["last_ex"] for r in chunk)
+assert len(seen) == len(bm), f"paging yielded {len(seen)} rows, full set is {len(bm)}"
+assert len(set(seen)) == len(seen), "a row appears on more than one page"
+assert set(seen) == keys(bm), "paged set differs from the unpaged set"
+assert order == sorted(order, reverse=True), "sort order breaks across page boundaries"
+print(f"9. paging              : {len(bm)} rows over {-(-len(bm) // per)} pages, "
+      f"no duplicates, no gaps, order intact")
+
+# Repeating the same page must return the same rows - the uc tiebreak matters
+# because many registrations share a last_ex date.
+a1 = A.filter_rows(status="belum_mengulang", limit=per, offset=per)
+a2 = A.filter_rows(status="belum_mengulang", limit=per, offset=per)
+assert keys(a1) == keys(a2), "same page returns different rows on repeat"
+
+# and on a big unfiltered set too, where ties are far more common
+big = []
+for pg in range(0, 6):
+    big.extend(keys(A.filter_rows(limit=200, offset=pg * 200)))
+assert len(set(big)) == len(big), "duplicate rows across pages on the unfiltered set"
+print(f"   tie stability       : repeated page identical; "
+      f"{len(big)} unfiltered rows unique across 6 pages")
+
+# offset past the end is empty, not an error
+assert A.filter_rows(status="belum_mengulang", limit=per, offset=10 ** 6) == []
+
+# count must not depend on paging
+assert A.filter_count(diklat="AMC", status="belum_mengulang") == 36
 
 # empty result must not explode
 assert rows(diklat="AMC", ijzh="UGN1") == [], "impossible combination returned rows"
@@ -191,11 +227,47 @@ with A.app.test_client() as c:
     tok = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
     h = c.post("/filter", data={"diklat": "AMC", "status": "belum_mengulang",
                                 "csrf": tok}).get_data(as_text=True)
-    assert "36 registrasi" in h or ">36<" in h or "dari 36" in h, \
-        "page does not report 36 AMC rows"
+    assert "dari <b>36</b> registrasi" in h, "page does not report 36 AMC rows"
     for sc in ("6211928464", "6211406146"):
         assert sc in h, f"known AMC dormant code {sc} missing from page"
     assert "BELUM LULUS" in h and "LULUS</span>" in h
+    # 36 < 100, so a single page and no pager
+    assert 'class="pager"' not in h, "pager shown for a single-page result"
+
+    # A multi-page result: walk it over HTTP and confirm the browser sees
+    # every row exactly once, with continuous numbering.
+    n = A.filter_count(status="belum_mengulang")
+    pages = -(-n // A.PER_PAGE)
+    codes, nums = [], []
+    for p in range(1, pages + 1):
+        body = c.get("/filter", query_string={"status": "belum_mengulang",
+                                              "page": p}).get_data(as_text=True)
+        rowhtml = body.split("<tbody>")[1].split("</tbody>")[0]
+        cells = re.findall(r"<tr>\s*<td>(\d+)</td>\s*<td><a[^>]*>(\d+)</a>", rowhtml)
+        assert cells, f"page {p} rendered no rows"
+        nums.extend(int(x[0]) for x in cells)
+        codes.extend(x[1] for x in cells)
+    assert nums == list(range(1, n + 1)), \
+        f"row numbering not continuous 1..{n} across {pages} pages"
+    assert len(codes) == n and len(set(zip(codes, nums))) == n, \
+        "HTTP paging dropped or repeated a row"
+    print(f"    paging over HTTP   : {n} rows, {pages} pages, numbering 1..{n} continuous")
+
+    # page beyond the end clamps instead of erroring or showing nothing
+    last = c.get("/filter", query_string={"status": "belum_mengulang",
+                                          "page": 9999}).get_data(as_text=True)
+    assert f"halaman {pages} dari {pages}" in last, "out-of-range page did not clamp"
+    bad = c.get("/filter", query_string={"status": "belum_mengulang",
+                                         "page": "abc"})
+    assert bad.status_code == 200 and "halaman 1 dari" in bad.get_data(as_text=True), \
+        "non-numeric page crashed the view"
+    print("    page clamping      : 9999 -> last page, 'abc' -> page 1")
+
+    # the pager must carry the filter, not drop it
+    p2 = c.get("/filter", query_string={"diklat": "STIP", "status": "belum_lulus",
+                                        "page": 2}).get_data(as_text=True)
+    assert "diklat=STIP" in p2 and "status=belum_lulus" in p2, \
+        "pager links lose the active filter"
 
     x = c.post("/filter.xlsx", data={"diklat": "AMC", "status": "belum_mengulang",
                                      "csrf": tok})

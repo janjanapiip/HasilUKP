@@ -499,7 +499,7 @@ def skl_label(step):
     return "BELUM TERBIT" if step.get("lulus") else "TIDAK ADA"
 
 
-FILTER_WEB_MAX = 300      # rows rendered in the browser
+PER_PAGE = 100            # rows per page in the browser
 FILTER_XLSX_MAX = 5000    # hard ceiling on a single export
 
 STATUS_OPTS = [
@@ -528,13 +528,9 @@ def filter_opts():
     }
 
 
-def filter_rows(diklat="", ijzh="", tahun="", status="semua", limit=FILTER_XLSX_MAX):
-    """Registrations (one row per seafarer per ijazah level) matching a filter.
-
-    The unit is the registration, not the person: someone who failed two levels
-    is two rows, which is what a follow-up list needs. 'belum_mengulang' counts
-    a retake whether it came back as another attempt on the same registration
-    or as a fresh re-registration, so nobody who did return is listed."""
+def _filter_sql(diklat="", ijzh="", tahun="", status="semua"):
+    """Build the filter query once, so the row fetch and the count can never
+    disagree about what matches."""
     where, args = ["1=1"], []
     if diklat:
         where.append("p.diklat=?")
@@ -565,20 +561,37 @@ def filter_rows(diklat="", ijzh="", tahun="", status="semua", limit=FILTER_XLSX_
         GROUP BY p.uc
         {'HAVING ' + ' AND '.join(having) if having else ''}"""
 
-    sql, a = inner, args + hargs
     if status == "belum_mengulang":
         # No later exam at the same level, counting re-registrations too.
-        sql = f"""SELECT * FROM ({inner}) f WHERE NOT EXISTS (
-                    SELECT 1 FROM peserta p2 JOIN nilai n2 ON n2.uc = p2.uc
-                    WHERE p2.sc = f.sc AND p2.ijzh = f.ijzh
-                      AND n2.tgl_ujian > f.last_ex)"""
-        sql += " ORDER BY f.last_ex DESC, f.nama LIMIT ?"
+        body = f"""SELECT * FROM ({inner}) f WHERE NOT EXISTS (
+                     SELECT 1 FROM peserta p2 JOIN nilai n2 ON n2.uc = p2.uc
+                     WHERE p2.sc = f.sc AND p2.ijzh = f.ijzh
+                       AND n2.tgl_ujian > f.last_ex)"""
+        order = " ORDER BY f.last_ex DESC, f.nama, f.uc"
     else:
-        sql = f"SELECT * FROM ({inner}) ORDER BY last_ex DESC, nama LIMIT ?"
+        body = f"SELECT * FROM ({inner})"
+        order = " ORDER BY last_ex DESC, nama, uc"
+    return body, order, args + hargs
+
+
+def filter_rows(diklat="", ijzh="", tahun="", status="semua",
+                limit=FILTER_XLSX_MAX, offset=0):
+    """Registrations (one row per seafarer per ijazah level) matching a filter.
+
+    The unit is the registration, not the person: someone who failed two levels
+    is two rows, which is what a follow-up list needs. 'belum_mengulang' counts
+    a retake whether it came back as another attempt on the same registration
+    or as a fresh re-registration, so nobody who did return is listed.
+
+    Sorting ends in uc, which is unique. Without that tiebreak SQLite may order
+    equal (last_ex, nama) pairs differently between queries, and a paged reader
+    would see a row twice or miss it entirely."""
+    body, order, a = _filter_sql(diklat, ijzh, tahun, status)
+    sql = body + order + " LIMIT ? OFFSET ?"
 
     ref = {r["ijzh"]: r["deskripsi"] for r in db().execute("SELECT * FROM ref_ijzh")}
     out = []
-    for r in db().execute(sql, a + [limit]):
+    for r in db().execute(sql, a + [limit, offset]):
         lulus = bool(r["pass_n"])
         step = {"cetak": r["cetak"], "has_skl": bool(r["skl_n"]), "lulus": lulus}
         out.append({
@@ -594,9 +607,10 @@ def filter_rows(diklat="", ijzh="", tahun="", status="semua", limit=FILTER_XLSX_
 
 
 def filter_count(diklat="", ijzh="", tahun="", status="semua"):
-    """Total matches, ignoring the display limit. Only called when the page
-    truncates, so the common path stays one query."""
-    return len(filter_rows(diklat, ijzh, tahun, status, limit=10 ** 9))
+    """Total matches. Counts in SQL rather than fetching every row, because
+    this now runs on every page view, not only when the list truncates."""
+    body, _order, a = _filter_sql(diklat, ijzh, tahun, status)
+    return db().execute(f"SELECT COUNT(*) FROM ({body})", a).fetchone()[0]
 
 
 def _xlsx(title, head, widths, data, notes=()):
@@ -745,13 +759,21 @@ def filter_view():
     if request.method == "GET" and not request.args:
         return render_template("filter.html", opts=opts, f=f)
 
-    # Ask for one more than we show, so "ada lagi" is known without a 2nd query
-    rows = filter_rows(**f, limit=FILTER_WEB_MAX + 1)
-    more = len(rows) > FILTER_WEB_MAX
-    total = filter_count(**f) if more else len(rows)
-    log("filter", "ok", q=f"{f['status']}/{f['diklat']}/{f['ijzh']}/{f['tahun']}")
-    return render_template("filter.html", opts=opts, f=f, rows=rows[:FILTER_WEB_MAX],
-                           more=more, total=total, shown=min(len(rows), FILTER_WEB_MAX))
+    total = filter_count(**f)
+    pages = max(1, -(-total // PER_PAGE))          # ceiling division
+    try:
+        page = int(request.values.get("page") or 1)
+    except ValueError:
+        page = 1
+    page = max(1, min(page, pages))                # clamp, never 404 on a stale link
+
+    rows = filter_rows(**f, limit=PER_PAGE, offset=(page - 1) * PER_PAGE)
+    log("filter", "ok", q=f"{f['status']}/{f['diklat']}/{f['ijzh']}/{f['tahun']} p{page}")
+    return render_template(
+        "filter.html", opts=opts, f=f, rows=rows, total=total,
+        page=page, pages=pages, per_page=PER_PAGE,
+        first=(page - 1) * PER_PAGE + 1, last=(page - 1) * PER_PAGE + len(rows),
+        xlsx_max=FILTER_XLSX_MAX)
 
 
 @app.route("/filter.xlsx", methods=["POST"])
