@@ -89,21 +89,224 @@ Tekan `Ctrl+C` di terminal.
 
 ## 4. Memperbarui Data dari Excel
 
-Ketika file master Excel diperbarui, jalankan ulang ETL untuk membuat ulang `ukp.db`:
+**Jawaban singkat: ya, cukup ganti file Excel-nya.** Aplikasi tidak pernah
+membaca Excel saat melayani pengguna — semua data sudah dipindahkan ke
+`ukp.db`. Jadi memperbarui data = menimpa file Excel lama, lalu membangun
+ulang `ukp.db`.
+
+### 4.1 Cara yang dianjurkan (paling aman)
+
+```bash
+cd "D:\PUKP-3\Project App UKP"
+.venv\Scripts\python.exe update_data.py
+```
+
+Satu perintah ini menjalankan seluruh proses dengan pengaman:
+
+1. memeriksa kedua file sumber ada dan bisa dibaca (menolak jika file
+   masih terbuka di Excel),
+2. membangun database baru ke file **sementara** (`ukp.db.new`) —
+   `ukp.db` yang sedang dipakai tidak disentuh sama sekali,
+3. membandingkan jumlah baris lama vs baru dan menampilkannya,
+4. **menolak melanjutkan** jika ada tabel menyusut lebih dari 2%,
+5. meminta konfirmasi, lalu menukar file dan menyimpan cadangan
+   `ukp.db.bak`.
+
+Jika terjadi kegagalan di langkah mana pun, `ukp.db` lama tetap utuh dan
+aplikasi terus berjalan seperti biasa.
+
+Contoh keluaran:
+
+```
+Sumber: D:\PUKP-3\v2026
+  ukp_v2021.xlsx         18.6 MB   diubah 2026-09-03 16:42
+  ukp_v2026.xlsx          5.6 MB   diubah 2026-09-15 08:11
+
+Database sekarang: 32813 peserta, 41137 nilai, 8132 SKL  (ujian terakhir 2026-08-10)
+
+Membangun database baru (sekitar 90 detik)...
+...
+Perbandingan:
+  tabel                  lama       baru    selisih
+  peserta               32813      33120       +307
+  nilai                 41137      41890       +753
+  skl                    8132       8340       +208
+  ref_ijzh                 45         45         +0
+  ref_diklat               12         12         +0
+  lulus                 29505      30012       +507
+
+  ujian terakhir : 2026-08-10 -> 2026-09-14
+  cetak terakhir : 2026-08-27 -> 2026-09-12
+
+Ganti ukp.db dengan yang baru? [y/N]:
+```
+
+**Yang harus diperiksa sebelum mengetik `y`:** angka pada kolom *selisih*
+harus **positif atau nol**, dan *ujian terakhir* harus maju ke tanggal yang
+lebih baru. Kalau tidak, ada yang salah dengan file sumber — lihat
+[4.6](#46-bila-ada-peringatan-data-menyusut).
+
+### 4.2 Opsi perintah
+
+| Perintah | Kegunaan |
+|---|---|
+| `update_data.py` | proses normal, dengan konfirmasi |
+| `update_data.py --check` | **uji coba**: bangun, bandingkan, lalu buang. `ukp.db` tidak diubah sama sekali. Gunakan ini untuk melihat dampak file Excel baru tanpa risiko |
+| `update_data.py --yes` | tanpa tanya-jawab (untuk skrip terjadwal) |
+
+Jalankan `--check` dulu bila ragu. Tidak ada efek samping apa pun.
+
+### 4.3 Langkah lengkap saat menerima file Excel baru
+
+1. **Cadangkan file lama** (sekali saja, untuk berjaga-jaga):
+
+   ```bash
+   cd "D:\PUKP-3\v2026"
+   copy ukp_v2026.xlsx ukp_v2026_backup.xlsx
+   ```
+
+2. **Timpa file lama dengan yang baru.** Nama file **harus tetap sama**:
+   `ukp_v2026.xlsx` dan `ukp_v2021.xlsx`. Menyimpan dengan nama lain
+   (`ukp_v2026 (1).xlsx`, `ukp_v2026 REVISI.xlsx`) membuat ETL tetap membaca
+   file lama tanpa pesan kesalahan apa pun.
+
+3. **Tutup Excel.** File yang masih terbuka mengunci pembacaan di Windows.
+
+4. **Jalankan pembaruan:**
+
+   ```bash
+   cd "D:\PUKP-3\Project App UKP"
+   .venv\Scripts\python.exe update_data.py
+   ```
+
+5. **Uji:**
+
+   ```bash
+   .venv\Scripts\python.exe test_app.py
+   .venv\Scripts\python.exe test_filter.py
+   ```
+
+   Keduanya harus berakhir dengan `all checks passed` / `all cross-checks passed`.
+
+6. **Periksa di browser:**
+
+   ```bash
+   .venv\Scripts\python.exe app.py
+   ```
+
+   Buka <http://127.0.0.1:5057>, pastikan jumlah di dashboard bertambah dan
+   cari satu peserta dari angkatan terbaru.
+
+7. **Unggah ke situs publik** (bila perlu):
+
+   ```bash
+   git add ukp.db exceptions.csv
+   git commit -m "Update data per September 2026"
+   git push
+   vercel deploy --prod --scope spp-service
+   ```
+
+   > `ukp.db` ikut disimpan di repositori karena Vercel tidak punya
+   > penyimpanan permanen. Tanpa langkah ini, situs publik tetap memakai data
+   > lama walaupun database lokal sudah diperbarui.
+
+### 4.4 Syarat file Excel
+
+Struktur workbook **tidak boleh berubah**. ETL membaca berdasarkan posisi
+kolom, bukan nama judulnya.
+
+| Sheet | Baris data mulai | Isi |
+|---|---|---|
+| `DataPeserta` | 2 | identitas peserta |
+| `DNILAI` | 2 | nilai per materi ujian |
+| `DataSKL` | 6 | penerbitan & cetak SKL |
+| `CONS` | 4 | tabel referensi ijazah & diklat |
+
+Yang **aman** dilakukan pada file Excel:
+
+- menambah baris data baru di bawah,
+- memperbaiki isi sel yang salah,
+- menambah sheet baru (diabaikan ETL).
+
+Yang **merusak** ETL:
+
+- menyisipkan/menghapus/memindahkan **kolom**,
+- mengubah urutan sheet atau menamainya ulang,
+- menyimpan dengan **filter aktif** lalu menghapus baris tersembunyi,
+- menyimpan sebagai `.xls` atau `.csv` (harus tetap `.xlsx`).
+
+Tanggal boleh ditulis bebas — ETL mengenali format Indonesia
+(`04-OKT-21`, `06 Juli 2026`) maupun ISO (`2026-07-06`).
+
+### 4.5 Kalau hasilnya salah — cara mundur
+
+Setiap pembaruan menyimpan `ukp.db.bak`. Untuk kembali ke data sebelumnya:
+
+```bash
+cd "D:\PUKP-3\Project App UKP"
+copy ukp.db.bak ukp.db
+```
+
+Hentikan server dulu bila sedang berjalan. Tidak ada langkah lain —
+aplikasi langsung memakai data lama begitu dijalankan ulang.
+
+### 4.6 Bila ada peringatan "data menyusut"
+
+```
+!! PERINGATAN - data menyusut:
+   - peserta turun 32813 baris (50.0%)
+```
+
+Artinya database baru punya jauh lebih sedikit baris daripada yang sedang
+dipakai. Data ujian **tidak pernah berkurang**, jadi ini hampir selalu
+masalah pada file sumber:
+
+| Penyebab | Cara periksa |
+|---|---|
+| Workbook disimpan dengan filter aktif | Buka Excel → Data → Clear Filter → simpan ulang |
+| Sheet terpotong saat copy-paste | Bandingkan jumlah baris `DataPeserta` dengan versi lama |
+| File tertukar (mis. hanya berisi satu angkatan) | Periksa ukuran file — `ukp_v2021.xlsx` ± 18 MB, `ukp_v2026.xlsx` ± 5 MB |
+| Kolom bergeser | Buka `exceptions.csv`, bila melonjak drastis berarti kunci tidak terbaca |
+
+Jangan ketik `ya` sebelum penyebabnya jelas. Menjawab apa pun selain `ya`
+membatalkan proses tanpa mengubah `ukp.db`.
+
+### 4.7 Yang ikut terjaga saat pembaruan
+
+- **`access_log`** (riwayat pemakaian aplikasi) disalin ke database baru.
+  Data ini tidak ada di Excel, jadi tanpa penyalinan ia akan hilang setiap
+  kali ETL dijalankan.
+- **`ukp.db.bak`** selalu ditimpa dengan versi *sebelum* pembaruan terakhir.
+  Hanya menyimpan satu generasi — simpan salinan sendiri bila perlu riwayat
+  lebih panjang.
+
+### 4.8 Menjalankan ETL secara langsung (tidak dianjurkan)
 
 ```bash
 .venv\Scripts\python.exe etl.py
+```
+
+Perintah ini menulis **langsung** ke `ukp.db`. Bila gagal di tengah jalan,
+database bisa tertinggal dalam keadaan setengah jadi dan aplikasi ikut rusak.
+Gunakan hanya saat membuat database pertama kali, atau ketika `ukp.db` memang
+belum ada.
+
+Untuk membangun ke lokasi lain tanpa menyentuh yang aktif:
+
+```bash
+.venv\Scripts\python.exe etl.py --out coba.db
 ```
 
 **File sumber yang dibaca:**
 - `D:\PUKP-3\v2026\ukp_v2026.xlsx` — data era 2026
 - `D:\PUKP-3\v2026\ukp_v2021.xlsx` — data era 2021
 
+> Kedua file berada di folder `v2026`. Ini memang membingungkan, tetapi
+> jangan dipindahkan — `etl.py` mencarinya di sana.
+
 **Hasil ETL:**
 - `ukp.db` — database SQLite (tabel: `peserta`, `nilai`, `skl`, `ref_ijzh`, `ref_diklat`, `access_log`)
 - `exceptions.csv` — baris data yang tidak bisa dipetakan ke peserta (lihat [Bagian 12](#12-exceptions-data-tidak-terpetakan))
-
-> **Catatan:** `access_log` (riwayat akses pengguna) **tidak dihapus** saat ETL dijalankan ulang. Hanya tabel data yang di-rebuild.
 
 **Waktu proses:** sekitar 90 detik.
 
@@ -112,6 +315,12 @@ Ketika file master Excel diperbarui, jalankan ulang ETL untuk membuat ulang `ukp
 - 41.137 rekaman ujian (nilai)
 - 8.132 SKL
 - 45 jenis ijazah (ref_ijzh)
+
+### 4.9 Seberapa sering perlu diperbarui?
+
+Ujian berlangsung kira-kira bulanan. Perbarui setiap kali menerima workbook
+hasil sidang terbaru. Aplikasi tidak menampilkan tanggal pembaruan data, jadi
+patokannya adalah nilai *ujian terakhir* yang ditampilkan `update_data.py`.
 
 ---
 
@@ -169,15 +378,27 @@ Project App UKP/
 │   └── logo-kemenhub-full.webp
 ├── templates/
 │   ├── base.html              # Layout utama: header, navbar, footer, CSS
-│   ├── index.html             # Dashboard statistik + form pencarian
+│   ├── index.html             # Dashboard statistik
+│   ├── cek.html               # Form pencarian peserta
 │   ├── verify.html            # Form verifikasi identitas
-│   └── detail.html            # Kartu nilai per tingkat ijazah
+│   ├── detail.html            # Kartu nilai per tingkat ijazah
+│   ├── login.html             # Masuk administrator
+│   ├── batch.html             # Cek massal (tempel kode pelaut)
+│   ├── filter.html            # Cari berdasarkan filter + halaman
+│   └── error.html             # Halaman kesalahan
 ├── app.py                     # Flask app, routes, API
 ├── etl.py                     # Import Excel → SQLite
+├── update_data.py             # Pembaruan data terkendali (lihat Bagian 4)
+├── report_no_retake.py        # Laporan belum lulus & belum mengulang
 ├── test_app.py                # Self-test backend
+├── test_filter.py             # Self-test fitur filter + halaman
 ├── test_dashboard.js          # Self-test chart/dashboard (Node.js)
 ├── ukp.db                     # Database SQLite (hasil ETL)
-└── exceptions.csv             # Baris data yang gagal dipetakan
+├── ukp.db.bak                 # Cadangan otomatis dari update_data.py
+├── exceptions.csv             # Baris data yang gagal dipetakan
+├── vercel.json                # Konfigurasi deploy Vercel
+├── requirements.txt           # flask, openpyxl
+└── .env.local                 # UKP_ADMIN_HASH (rahasia, tidak masuk git)
 ```
 
 ---
