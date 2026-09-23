@@ -3,11 +3,16 @@
 
 <h1>Dashboard Ujian Keahlian Pelaut</h1>
 <p class="sub">Rekapitulasi data ujian, kelulusan, dan penerbitan Surat Keterangan Lulus.</p>
+<p class="sub" id="scope" style="display:none;font-weight:600;color:var(--brand,#0652e9)"></p>
 
 <div class="card" style="margin-top:16px">
   <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">
     <label>Tahun<br><select id="fYear"><option value="all">Semua tahun</option>
       {% for y in years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+    </select></label>
+    <label>Lembaga Diklat<br><select id="fDiklat">
+      <option value="">Semua lembaga</option>
+      {% for d in diklats %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
     </select></label>
     <label>Dasar tanggal<br><select id="fBasis">
       <option value="ujian">Tanggal Ujian</option>
@@ -34,7 +39,7 @@
 </div>
 
 <div class="card">
-  <h2>Tingkat Kelulusan per Tingkat Ijazah</h2>
+  <h2 id="hRate">Tingkat Kelulusan per Tingkat Ijazah</h2>
   <p class="muted" style="margin:-8px 0 12px">Persentase peserta lulus (seluruh nilai &ge; 70) dari total rekaman ujian.
      Warna menandakan jenis program; gradasi terang menandakan tingkat ijazah yang lebih rendah.</p>
   <div style="height:340px"><canvas id="cRate"></canvas></div>
@@ -42,11 +47,24 @@
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px">
-  <div class="card"><h2>Rekaman per Tingkat Ijazah</h2>
+  <div class="card"><h2 id="hIjzh">Rekaman per Tingkat Ijazah</h2>
     <div style="height:330px"><canvas id="cIjzh"></canvas></div>
     <div class="legend" id="lIjzh"></div></div>
   <div class="card"><h2>Rekaman per Lembaga Diklat / Asal Sekolah</h2>
+    <p class="muted" style="margin:-8px 0 12px">Selalu menampilkan seluruh lembaga sebagai pembanding,
+       walaupun filter lembaga sedang aktif.</p>
     <div style="height:330px"><canvas id="cDiklat"></canvas></div></div>
+</div>
+
+<div class="card">
+  <h2>Rekapitulasi per Lembaga Diklat</h2>
+  <p class="muted" style="margin:-8px 0 12px">Klik satu baris untuk memfilter seluruh dashboard ke lembaga tersebut.
+     Urut menurut jumlah rekaman ujian.</p>
+  <table id="tDiklat">
+    <tr><th>Lembaga</th><th style="text-align:right">Rekaman</th>
+        <th style="text-align:right">Peserta</th><th style="text-align:right">Lulus</th>
+        <th style="text-align:right">Belum Lulus</th><th style="text-align:right">Tingkat Kelulusan</th></tr>
+  </table>
 </div>
 
 <div class="card">
@@ -143,6 +161,19 @@ function render(d){
   const t = d.total, rate = t.total ? (100*t.lulus/t.total) : 0;
   const belum = (d.skl.total||0) - (d.skl.cetak||0);
 
+  // Scope banner: without it, a filtered page is indistinguishable from the
+  // national one and the numbers get misread as totals.
+  const sc = document.getElementById('scope');
+  if (d.diklat) {
+    sc.textContent = 'Menampilkan data lembaga: ' + d.diklat
+      + (d.diklat_nama ? ' — ' + d.diklat_nama : '');
+    sc.style.display = '';
+  } else { sc.style.display = 'none'; }
+  const suffix = d.diklat ? ` · ${d.diklat}` : '';
+  document.getElementById('hRate').textContent =
+    'Tingkat Kelulusan per Tingkat Ijazah' + suffix;
+  document.getElementById('hIjzh').textContent = 'Rekaman per Tingkat Ijazah' + suffix;
+
   document.getElementById('strip').innerHTML = `
     <div class="stat"><div class="k">Total Rekaman Ujian</div><div class="v">${fmt(t.total)}</div>
       <div class="d">${fmt(t.peserta)} peserta unik</div></div>
@@ -211,7 +242,32 @@ function render(d){
   };
   barOrPie('cIjzh', d.per_ijzh, 'ijzh', ijzhColor);
   legend('lIjzh', d.per_ijzh.map(r=>r.ijzh));
-  barOrPie('cDiklat', d.per_diklat, 'diklat');
+  // Highlight the selected institution in the comparison chart, mute the rest.
+  const sel = d.diklat;
+  barOrPie('cDiklat', d.per_diklat, 'diklat',
+    sel ? (k => k === sel ? C.brand : '#c9d4e8') : null);
+
+  // --- per-institution recap table ---
+  const rowsHtml = d.per_diklat.map(r => {
+    const belum = r.total - r.lulus, pr = r.total ? 100*r.lulus/r.total : 0;
+    const on = r.diklat === sel;
+    return `<tr data-d="${r.diklat}" style="cursor:pointer${on ? ';background:#eaf1ff;font-weight:600' : ''}"
+        title="${r.deskripsi || r.diklat}">
+      <td>${r.diklat}${r.deskripsi ? ` <span class="muted" style="font-weight:400">— ${r.deskripsi}</span>` : ''}</td>
+      <td style="text-align:right">${fmt(r.total)}</td>
+      <td style="text-align:right">${fmt(r.peserta)}</td>
+      <td style="text-align:right;color:${C.ok}">${fmt(r.lulus)}</td>
+      <td style="text-align:right;color:${belum ? C.bad : C.muted}">${fmt(belum)}</td>
+      <td style="text-align:right"><b>${pr.toFixed(1)}%</b></td></tr>`;
+  }).join('');
+  const tb = document.getElementById('tDiklat');
+  tb.innerHTML = tb.rows[0].outerHTML + rowsHtml;
+  tb.querySelectorAll('tr[data-d]').forEach(tr => tr.addEventListener('click', () => {
+    const v = tr.dataset.d;
+    const f = document.getElementById('fDiklat');
+    f.value = (f.value === v) ? '' : v;      // clicking the active row clears it
+    load();
+  }));
 }
 
 async function load(){
@@ -219,14 +275,15 @@ async function load(){
   el.textContent = 'Memuat data...';
   const y = document.getElementById('fYear').value;
   const b = document.getElementById('fBasis').value;
+  const dk = document.getElementById('fDiklat').value;
   try {
-    const r = await fetch(`/api/stats?year=${y}&basis=${b}`);
+    const r = await fetch(`/api/stats?year=${y}&basis=${b}&diklat=${encodeURIComponent(dk)}`);
     if (!r.ok) throw new Error(r.status);
     render(await r.json());
     el.textContent = '';
   } catch(e) { el.textContent = 'Gagal memuat data statistik.'; }
 }
-['fYear','fBasis','fMode','fPeriod'].forEach(id =>
+['fYear','fDiklat','fBasis','fMode','fPeriod'].forEach(id =>
   document.getElementById(id).addEventListener('change', load));
 load();
 </script>

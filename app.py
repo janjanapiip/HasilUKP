@@ -188,53 +188,117 @@ def _years():
         " WHERE tgl_ujian IS NOT NULL ORDER BY y DESC")]
 
 
+# ref_diklat comes from the CONS sheet, which is missing the host school and
+# spells Binasena as BNS, so these two never resolve by join. Kept here rather
+# than patched into ukp.db because etl.py rebuilds ref_diklat on every refresh.
+DIKLAT_ALIAS = {
+    "STIP": "Sekolah Tinggi Ilmu Pelayaran Jakarta",
+    "BINA SENA": "Akademi Maritim Binasena",
+}
+
+
+def _diklats():
+    """Training institutions that actually own exam records, biggest first."""
+    return [r[0] for r in db().execute(
+        "SELECT p.diklat FROM nilai n JOIN peserta p ON p.uc = n.uc"
+        " WHERE COALESCE(p.diklat,'')<>''"
+        " GROUP BY p.diklat ORDER BY COUNT(*) DESC")]
+
+
+def _diklat_nama(code):
+    if not code:
+        return ""
+    r = db().execute(
+        "SELECT deskripsi FROM ref_diklat WHERE diklat=?", [code]).fetchone()
+    return (r[0] if r and r[0] else "") or DIKLAT_ALIAS.get(code, "")
+
+
 @app.route("/api/stats")
 def api_stats():
-    """Aggregates for the dashboard. ?year=2026 or ?year=all, ?basis=ujian|sidang"""
+    """Aggregates for the dashboard.
+
+    ?year=2026|all  ?basis=ujian|sidang  ?diklat=STIP (empty = all institutions)
+
+    The peserta join is added only when a diklat is chosen: 18 of 41,990 nilai
+    rows have no matching peserta, and joining unconditionally would silently
+    drop them from the unfiltered headline figures.
+    """
     year = request.args.get("year", "all")
     basis = "tgl_sidang" if request.args.get("basis") == "sidang" else "tgl_ujian"
-    where, args = f"{basis} IS NOT NULL", []
-    nwhere = f"n.{basis} IS NOT NULL"          # same filter, aliased for the join below
+    diklat = (request.args.get("diklat") or "").strip()
+    if diklat and diklat not in _diklats():
+        diklat = ""                            # unknown value: ignore, don't 500
+
+    join = " JOIN peserta p ON p.uc = n.uc" if diklat else ""
+    nwhere, args = f"n.{basis} IS NOT NULL", []
     if year != "all":
-        where += f" AND substr({basis},1,4)=?"
         nwhere += f" AND substr(n.{basis},1,4)=?"
-        args = [year]
+        args.append(year)
+    if diklat:
+        nwhere += " AND p.diklat=?"
+        args.append(diklat)
+
+    # Same institution filter, no year filter: the annual series is a trend line.
+    awhere, aargs = f"n.{basis} IS NOT NULL", []
+    if diklat:
+        awhere += " AND p.diklat=?"
+        aargs.append(diklat)
 
     rows = lambda sql, a: [dict(r) for r in db().execute(sql, a)]
 
     monthly = rows(
-        f"SELECT substr({basis},1,7) bulan, COUNT(*) total,"
-        f" SUM(lulus) lulus FROM nilai WHERE {where}"
+        f"SELECT substr(n.{basis},1,7) bulan, COUNT(*) total,"
+        f" SUM(n.lulus) lulus FROM nilai n{join} WHERE {nwhere}"
         f" GROUP BY bulan ORDER BY bulan", args)
     annual = rows(
-        f"SELECT substr({basis},1,4) tahun, COUNT(*) total, SUM(lulus) lulus"
-        f" FROM nilai WHERE {basis} IS NOT NULL GROUP BY tahun ORDER BY tahun", [])
+        f"SELECT substr(n.{basis},1,4) tahun, COUNT(*) total, SUM(n.lulus) lulus"
+        f" FROM nilai n{join} WHERE {awhere} GROUP BY tahun ORDER BY tahun", aargs)
     per_ijzh = rows(
         f"SELECT COALESCE(NULLIF(n.ijzh,''),'(kosong)') ijzh, COUNT(*) total,"
         f" SUM(n.lulus) lulus, r.deskripsi"
-        f" FROM nilai n LEFT JOIN ref_ijzh r ON r.ijzh = n.ijzh"
+        f" FROM nilai n{join} LEFT JOIN ref_ijzh r ON r.ijzh = n.ijzh"
         f" WHERE {nwhere}"
         f" GROUP BY n.ijzh ORDER BY total DESC", args)
+    # Never filtered by institution: this is the cross-institution comparison,
+    # so it must keep every bar even while the rest of the page is narrowed.
+    dwhere, dargs = f"n.{basis} IS NOT NULL", []
+    if year != "all":
+        dwhere += f" AND substr(n.{basis},1,4)=?"
+        dargs.append(year)
     per_diklat = rows(
         f"SELECT COALESCE(NULLIF(p.diklat,''),'(kosong)') diklat, COUNT(*) total,"
-        f" SUM(n.lulus) lulus FROM nilai n JOIN peserta p ON p.uc = n.uc"
-        f" WHERE {nwhere}"
-        f" GROUP BY p.diklat ORDER BY total DESC", args)
+        f" SUM(n.lulus) lulus, COUNT(DISTINCT n.uc) peserta, d.deskripsi"
+        f" FROM nilai n JOIN peserta p ON p.uc = n.uc"
+        f" LEFT JOIN ref_diklat d ON d.diklat = p.diklat"
+        f" WHERE {dwhere}"
+        f" GROUP BY p.diklat ORDER BY total DESC", dargs)
+    for r in per_diklat:
+        if not r["deskripsi"]:
+            r["deskripsi"] = DIKLAT_ALIAS.get(r["diklat"], "")
     # Count distinct uc, not rows: 1,115 uc own several SKL rows (reprints),
     # which would otherwise inflate the printed figure.
-    skl_where = "1=1" if year == "all" else "substr(tgl_cetak,1,4)=?"
-    skl_args = [] if year == "all" else [year]
+    sjoin = " JOIN peserta p ON p.uc = s.uc" if diklat else ""
+    skl_where, skl_args = "1=1", []
+    if year != "all":
+        skl_where = "substr(s.tgl_cetak,1,4)=?"
+        skl_args.append(year)
+    if diklat:
+        skl_where += " AND p.diklat=?"
+        skl_args.append(diklat)
     skl = db().execute(
-        f"SELECT COUNT(DISTINCT uc) total,"
-        f" COUNT(DISTINCT CASE WHEN tgl_cetak IS NOT NULL THEN uc END) cetak"
-        f" FROM skl WHERE {skl_where}", skl_args).fetchone()
+        f"SELECT COUNT(DISTINCT s.uc) total,"
+        f" COUNT(DISTINCT CASE WHEN s.tgl_cetak IS NOT NULL THEN s.uc END) cetak"
+        f" FROM skl s{sjoin} WHERE {skl_where}", skl_args).fetchone()
     tot = db().execute(
-        f"SELECT COUNT(*) total, SUM(lulus) lulus,"
-        f" COUNT(DISTINCT uc) peserta FROM nilai WHERE {where}", args).fetchone()
+        f"SELECT COUNT(*) total, SUM(n.lulus) lulus,"
+        f" COUNT(DISTINCT n.uc) peserta FROM nilai n{join}"
+        f" WHERE {nwhere}", args).fetchone()
 
     return {
         "year": year, "basis": request.args.get("basis", "ujian"),
-        "years": _years(),
+        "diklat": diklat,
+        "years": _years(), "diklats": _diklats(),
+        "diklat_nama": _diklat_nama(diklat),
         "total": dict(tot), "skl": dict(skl),
         "monthly": monthly, "annual": annual,
         "per_ijzh": per_ijzh, "per_diklat": per_diklat,
@@ -243,7 +307,7 @@ def api_stats():
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    return render_template("index.html", diklats=_diklats())
 
 
 @app.route("/cek", methods=["GET", "POST"])
