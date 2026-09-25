@@ -47,6 +47,8 @@
         <div class="muted">{{ c.attempts[0].ijzh_nama }}</div>{% endif %}
       <div class="muted">No. UKP {{ c.p.noukp }} &middot;
         {{ c.p.diklat_nama or c.p.diklat }} &middot; UKP pertama {{ c.p.ukp1 or '-' }}</div>
+      <div style="margin-top:6px"><a href="{{ url_for('kompetensi') }}#{{ c.p.ijzh }}"
+        style="font-size:12px">Lihat daftar kompetensi {{ c.p.ijzh }} &rarr;</a></div>
     </div>
     <div style="text-align:right">
       <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">Surat Keterangan Lulus</div>

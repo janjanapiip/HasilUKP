@@ -310,6 +310,29 @@ def index():
     return render_template("index.html", diklats=_diklats())
 
 
+# Loaded once at import: the guide is static reference data rebuilt only when
+# build_kompetensi.py is re-run, so re-reading it per request buys nothing.
+def _load_kompetensi():
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kompetensi.json")
+    try:
+        with open(p, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+KOMPETENSI = _load_kompetensi()
+
+
+@app.route("/kompetensi")
+def kompetensi():
+    if not KOMPETENSI:
+        return render_template(
+            "error.html", pesan="Daftar kompetensi belum tersedia."), 503
+    log("kompetensi", "ok")
+    return render_template("kompetensi.html", k=KOMPETENSI)
+
+
 @app.route("/cek", methods=["GET", "POST"])
 def cek():
     if request.method == "GET":

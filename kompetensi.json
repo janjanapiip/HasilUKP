@@ -1,0 +1,1832 @@
+{
+ "sumber": "Daftar Kompetensi UKP Perdana.xlsx",
+ "tingkat": [
+  {
+   "tingkat": "ANT I",
+   "kode": "UGN1",
+   "grup": "Nautika Peningkatan",
+   "nama": "AHLI NAUTIKA TINGKAT-I (ANT-I) PENINGKATAN",
+   "cba": 11,
+   "komp": 3,
+   "total": 14,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain Safe Navigation Through The Use Of Information From Navigation Equipment And Systems To Assist Command Decision Making",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Maintain The Safety Of Navigation Through The Use Of Ecdis And Associated Navigation Systems To Assist Command Decision Making",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Manoeuvre And Handle A Ship In All Conditions",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Response To Navigational Emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Assess Reported Defects And Damage To Cargo Spaces, Hatch Covers And Ballsat Tanks And Take Appropriate Action",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Plan And Ensure Safe Loading, Stowage, Securing, Care During Voyage And Unloading Of Cargoes",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Carriage Of Dangerous Goods",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Control Trim, Stability And Stress",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security And The Protection Of The Marine Environment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Use Of Leadership And Managerial",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Navigation at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Cargo Handling and Stowage at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT II",
+   "kode": "UGN2",
+   "grup": "Nautika Peningkatan",
+   "nama": "AHLI NAUTIKA TINGKAT-II (ANT-II) PENINGKATAN",
+   "cba": 19,
+   "komp": 3,
+   "total": 22,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan A Voyage And Conduct Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Determine Position And The Accuracy Of Resultant Position Fix By Any Means",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Determine And Allow For Compass Errors",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Coordinate Search And Rescue Operations",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Establish Watchkeeping Arrangements And Procedures",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Control Trim, Stability And Stress",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security And The Protection Of The Marine Environment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Maintain Safety And Security Of The Ship’S Crew And Passengers And The Operational Condition Of Lifesaving, Firefighting And Other Safety Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Carriage Of Dangerous Goods",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Maintain Safe Navigation Through The Use Of Information From Navigation Equipment And Systems To Assist Command Decision Making",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Forecast Weather And Oceanographic Conditions",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Manoeuvre And Handle A Ship In All Conditions",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Operate Remote Controls Of Propulsion Plant And Engineering Systems And Services",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Develop Emergency And Damage Control Plans And Handle Emergency Situations",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Use Of Leadership And Managerial",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Organize And Manage The Provision Of Medical Care On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Assess Reported Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks And Take Appropriate Action",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU19",
+     "no": 19,
+     "nama": "Plan And Ensure Safe Loading, Stowage, Securing, Care During Voyage And Unloading Of Cargoes",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU20",
+     "no": 20,
+     "nama": "Navigation at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU21",
+     "no": 21,
+     "nama": "Cargo Handling and Stowage at the management level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU22",
+     "no": 22,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT III",
+   "kode": "UGN3",
+   "grup": "Nautika Peningkatan",
+   "nama": "AHLI NAUTIKA TINGKAT-III (ANT-III) PENINGKATAN",
+   "cba": 19,
+   "komp": 3,
+   "total": 22,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Conduct A Passage And Determine Position",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Maintain A Safe Navigational Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Respond To Emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Respond To A Distress Signal At Sea",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Manoeuvre The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Maintain Seaworthiness Of The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Prevent, Control And Fight Fires On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operate Life-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Contribute To The Safety Of Personnel And Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Use Of Radar And Arpa To Maintain Safety Of Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Use Of Ecdis To Maintain The Safety Of Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Use The Imo Standard Marine Communication Phrases And Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Transmit And Receive Information By Visual Signaling",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Monitor The Loading, Stowage, Securing, Care During The Voyage And The Unloading",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Inspect And Report Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU19",
+     "no": 19,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU20",
+     "no": 20,
+     "nama": "Navigation at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU21",
+     "no": 21,
+     "nama": "Cargo Handling and Stowage at the management level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU22",
+     "no": 22,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT IV",
+   "kode": "UGN4",
+   "grup": "Nautika Peningkatan",
+   "nama": "AHLI NAUTIKA TINGKAT-IV (ANT-IV) PENINGKATAN",
+   "cba": 15,
+   "komp": 3,
+   "total": 18,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Conduct A Passage And Determine Position",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Maintain A Safe Navigational Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Respond To Emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Prevent, Control And Fight Fires On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Operate Life-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Respond To A Distress Signal At Sea",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Manoeuvre The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Use The Imo Standard Marine Communication Phrases And Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Monitor The Loading, Stowage, Securing, Care During The Voyage And The Unloading",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Inspect And Report Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Maintain Seaworthiness Of The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Navigation at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "Cargo Handling and Stowage at ehe Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Controlling the operation of the ship and care for personal onboard at the operational level",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT V",
+   "kode": "UGN5",
+   "grup": "Nautika Peningkatan",
+   "nama": "AHLI NAUTIKA TINGKAT-V (ANT-V) PENINGKATAN",
+   "cba": 13,
+   "komp": 3,
+   "total": 16,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Conduct A Passage And Determine Position",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Maintain A Safe Navigational Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Respond To Emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Prevent, Control And Fight Fires On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Operate Life-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Respond To A Distress Signal At Sea",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Manoeuvre The Ship And Operate Small Ship Power Plants",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Imo Standard Marine Communication Phrases",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Monitor The Loading, Stowage, Securing, Care During The Voyage And The Unloading",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Inspect And Report Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Monitor compliance with legislative requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Navigation at Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Cargo Handling and Stowage at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Controling the Operation of the Ship and Care for Person on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT III Pra Prala",
+   "kode": "PRAN3",
+   "grup": "Nautika Pembentukan",
+   "nama": "AHLI NAUTIKA TINGKAT-III (ANT-III) PRAPRALA",
+   "cba": 10,
+   "komp": 0,
+   "total": 10,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Conduct A Passage And Determine Position",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Maintain A Save Navigational Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Respond To Emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Respond To A Distress Signal At Sea",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Manouver The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Maintain A Seaworthiness Of The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Prevent Control Flight Fires On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operate Life Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Contribute To The Safety Of Personnel And Ship",
+     "jenis": "CBA"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT III Pasca Prala",
+   "kode": "PASN3",
+   "grup": "Nautika Pembentukan",
+   "nama": "AHLI NAUTIKA TINGKAT-III (ANT-III) PASCAPRALA",
+   "cba": 10,
+   "komp": 3,
+   "total": 13,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Conduct A Passage And Determine Position",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Use Of Radar And Arpa To Maintain Safety Of Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Use Of Ecdis To Maintain The Safety Of Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Use The IMO SMCP  And Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Transmit And Receive Information By Visual Signaling",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Monitor The Loading, Stowage, Securing, Care During The Voyage And The Unloading",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Inspect And Report Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Navigation at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Cargo  Handling and Stowage at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Controlling the Operation of the Ship and Care of Persons on Board at the Operational Level",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT II Pra Layar",
+   "kode": "PRAN2",
+   "grup": "Nautika Pembentukan",
+   "nama": "AHLI NAUTIKA TINGKAT-II (ANT-II) PRALAYAR",
+   "cba": 9,
+   "komp": 0,
+   "total": 9,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan A Voyage And Conduct Navigation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Determine Position And The Accuracy Of Resultant Position Fix By Any Means",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Determine And Allow For Compass Errors",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Coordinate Search And Rescue Operations",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Establish Watchkeeping Arrangements And Procedures",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Control Trim, Stability And Stress",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security And The Protection Of The Marine Environment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Maintain Safety And Security Of The Ship’S Crew And Passengers And The Operational Condition Of Lifesaving, Firefighting And Other Safety Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Carriage Of Dangerous Goods",
+     "jenis": "CBA"
+    }
+   ]
+  },
+  {
+   "tingkat": "ANT II Pasca Layar (D-IV Lanjutan)",
+   "kode": "PASN2",
+   "grup": "Nautika Pembentukan",
+   "nama": "AHLI NAUTIKA TINGKAT-II (ANT-II) PASCALAYAR",
+   "cba": 10,
+   "komp": 3,
+   "total": 13,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain Safe Navigation Through The Use Of Information From Navigation Equipment And Systems To Assist Command Decision Making",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Forecast Weather And Oceanographic Conditions",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Manouvre And Handle A Ship In All Condition",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Operate Remote Controls Of Propulsion Plant And Engineering Systems And Services",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Develop Emergency And Damage Control Plans And Handle Emergency Situation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Use Leadership And Managerial",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Organize And Manage The Provision Of Medical Care Onboard",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Assess Reported Defects And Damage To Cargo Spaces, Hatch Covers And Ballast Tanks And Take Appropriate Action",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Plan And Ensure Safe Loading, Stowage, Securing, Care During Voyage And Unloading Of Cargoes",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Navigation at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Cargo Handling and Stowage at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "GMDSS",
+   "kode": "GMDSS",
+   "grup": "Keterampilan",
+   "nama": "GMDSS RADIO OPERATOR",
+   "cba": 2,
+   "komp": 2,
+   "total": 4,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Transmit and receive information using GMDSS subsystems and equipment and",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Provide Radio services in emergencies",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Transmit and receive information using GMDSS subsystems and equipment (P)",
+     "jenis": "Praktik"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Provide Radio services in emergencies (P)",
+     "jenis": "Praktik"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT I",
+   "kode": "UGT1",
+   "grup": "Teknika Peningkatan",
+   "nama": "AHLI TEKNIKA TINGKAT-I (ATT-I) PENINGKATAN",
+   "cba": 9,
+   "komp": 4,
+   "total": 13,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Manage The Operation Of Propulsion Plant",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Manage Operation Of Electrical And Electronic Control Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Manage Trouble-Shooting, Restoration Of Electrical And Electronic Control Equipment To Operating Condition",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Manage Safe And Effective Maintenance And Repair Procedures",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Detect And Identity The Cause Of Machinery Malfunctions And Correct Faults",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Safe Working Pratices",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security Anad Protection Of The Marine Enviroment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Use Leadership And Managerial Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Marine Engineering at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Electrical, Electronic, Control System at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Maintenance and Repair at Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT II",
+   "kode": "UGT2",
+   "grup": "Teknika Peningkatan",
+   "nama": "AHLI TEKNIKA TINGKAT-II (ATT-II) PENINGKATAN",
+   "cba": 15,
+   "komp": 4,
+   "total": 19,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Schedule Operation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Manage Fuel, Lubrication, And Ballast Operation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "(Manage Operation Of Electrical And Electronic Control Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Ensure Safe Working Practices",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Control Trim, Stability And Stress",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security And Protection Of The Marine Environment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Develop Emergency And Damage Control Plans And Handle Emergency Situations",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Manage The Operation Of Propulsion Plant",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operation, Surveillance, Performance Assessment And Maintaining, Safety Of Prupolsion Plant And Auxiliary Machineries",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Manage Trouble-Shooting, Restoration Of Electrical And Electronic Control Equipment To Operating Condition",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Manage Safe And Effective Maintenance And Repair Procedures",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Detect And Identify The Cause Of Machinery Malfunctions And Correct Faults",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Maintain Safety And Security Of The Vessel, Crew And Passengers And The Operational Condition Of Life-Saving, Fire-Fighting And Other Safety Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Use Leadership and managerial skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Marine Engineering at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "Electrical. Electronic, Control System at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Maintenance and Repair at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU19",
+     "no": 19,
+     "nama": "Controlling the Operation of the Ship and Care for Persons Onboard",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT III",
+   "kode": "UGT3",
+   "grup": "Teknika Peningkatan",
+   "nama": "AHLI TEKNIKA TINGKAT-III (ATT-III) PENINGKATAN",
+   "cba": 17,
+   "komp": 4,
+   "total": 21,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain A Safe Engineering Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Use Internal Communication Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Operate Main And Auxiliary Machinery And Associated Control Systems (MPU)",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Operate Electrical, Electronic And Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Appropriate Use Of Hand Tools, Machine Tools And Measuring Instruments For Fabrication And Repair On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Maintain Seaworthiness Of The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Prevent, Control And Fight Fires On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operate Life-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Operate Fuel, Lubrication, Ballast And Other Pumping Systems And Associated Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Maintenance And Repair Of Electrical And Electronic Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Maintenance And Repair Of Shipboard Machinery And Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "Contribute To The Safety Of Personnel And Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Marine Engineering at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU19",
+     "no": 19,
+     "nama": "Electrical, Electronic, Control System at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU20",
+     "no": 20,
+     "nama": "Maintenance and Repair at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU21",
+     "no": 21,
+     "nama": "Controlling the Operation of the Ship and care for Persons onboard",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT IV",
+   "kode": "UGT4",
+   "grup": "Teknika Peningkatan",
+   "nama": "AHLI TEKNIKA TINGKAT-IV (ATT-IV) PENINGKATAN",
+   "cba": 16,
+   "komp": 4,
+   "total": 20,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain A Safe Engineering Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Use Internal Communication Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Operate Main And Auxiliary Machinery And Associated Control Systems (MPU)",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Appropriate Use Of Hand Tools, Machine Tools And Measuring Instruments For Fabrication And Repair On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Operate Electrical, Electronic And Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Compliance With Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Prevent, Control And Fight Fire On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Operate Live-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Operate Fuel, Lubrication, Ballast And Other Pumping Systems And Associated Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Maintenance And Repair Of Shipboard Machinery And Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Maintenance And Repair Of Electrical And Electronic Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Maintain Seaworthiness Of The Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU15",
+     "no": 15,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU16",
+     "no": 16,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU17",
+     "no": 17,
+     "nama": "Marine engineering at the operational level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU18",
+     "no": 18,
+     "nama": "Electrical, Electronic,Control System at the operational level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU19",
+     "no": 19,
+     "nama": "Maintenance and repair at the management level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU20",
+     "no": 20,
+     "nama": "Controlling the Operation of the ship and care for person on board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT V",
+   "kode": "UGT5",
+   "grup": "Teknika Peningkatan",
+   "nama": "AHLI TEKNIKA TINGKAT-V (ATT-V) PENINGKATAN",
+   "cba": 10,
+   "komp": 4,
+   "total": 14,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain A Safe Engineering Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Operate Main And Auxiliary Machinery And Associated Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Operate Fuel, Lubrication, Ballast And Other Pumping Systems And Associated Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Operate Electrical, Electronic And Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Appropriate Use Of Hand Tools, Machine Tools And Measuring Instruments For Fabrication And Repair On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Maintenance And Repair Of Shipboard Machinery And Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Prevent, Control And Fight Fire On Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operate Live-Saving Appliances",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Marine Engineering at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Electrical,Electronic,Control System at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Maintenance and Repair at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU14",
+     "no": 14,
+     "nama": "Controlling the Operation of the Ship and Care for Person on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT III Pra Prala",
+   "kode": "PRAT3",
+   "grup": "Teknika Pembentukan",
+   "nama": "AHLI TEKNIKA TINGKAT-III (ATT-III) PRAPRALA",
+   "cba": 9,
+   "komp": 0,
+   "total": 9,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Maintain a Safe Engineering Watch",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Use Internal communication System",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Operate Main and Auxilliary Machinery and Ascociated Control System (MPU)",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Operate Electrical, Electronic and Control System",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Appropriate Use of Hand Toos, Machine Tools and Measuring Instruments for Fabrication and Repair on Board",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Ensure Compliance with Pollution Prevention Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Maintain Seaworthiness of the Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Prevent, Control and Fight Fires onboard",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Operate Life-Saving Appliances",
+     "jenis": "CBA"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT III Pasca Prala",
+   "kode": "PAST3",
+   "grup": "Teknika Pembentukan",
+   "nama": "AHLI TEKNIKA TINGKAT-III (ATT-III) PASCAPRALA",
+   "cba": 9,
+   "komp": 4,
+   "total": 13,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Use English In Written And Oral Form",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Operate Main And Auxiliary Machinery And Associated Control Systems (Mpu)",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Operate Fuel, Lubrication, Ballast And Other Pumping Systems And Associated Control Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Maintenance And Repair Of Electrical And Electronic Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Maintenance And Repair Of Shipboard Machinery And Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Apply Medical First Aid On Board Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Monitor Compliance With Legislative Requirements",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "Application Of Leadership And Teamworking Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Contribute To The Safety Of Personnel And Ship",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Marine Engineering at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Electrical, Electronic, Control System at the Operational Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Maintenance and Repair at Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU13",
+     "no": 13,
+     "nama": "Controlling the Operation of the Ship and Care for Persons on Board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT II Pra Layar",
+   "kode": "PRAT2",
+   "grup": "Teknika Pembentukan",
+   "nama": "AHLI TEKNIKA TINGKAT-II (ATT-II) PRALAYAR",
+   "cba": 7,
+   "komp": 0,
+   "total": 7,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Plan And Schedule Operation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Manage Fuel, Lubrication, And Ballast Operation",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Manage Operation Of Electrical And Electronic Control Equipment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Ensure Safe Working Practices",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Control Trim, Stability And Stress",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Monitor And Control Compliance With Legislative Requirements And Measures To Ensure Safety Of Life At Sea, Security And Protection Of The Marine Environment",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Develop Emergency And Damage Control Plans And Handle Emergency Situations",
+     "jenis": "CBA"
+    }
+   ]
+  },
+  {
+   "tingkat": "ATT II Pasca Layar (D-IV Lanjutan)",
+   "kode": "PAST2",
+   "grup": "Teknika Pembentukan",
+   "nama": "AHLI TEKNIKA TINGKAT-II (ATT-II) PASCALAYAR",
+   "cba": 8,
+   "komp": 4,
+   "total": 12,
+   "mu": [
+    {
+     "kode": "MU01",
+     "no": 1,
+     "nama": "Manage The Operation Of Propulsion Plant",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU02",
+     "no": 2,
+     "nama": "Operation, Surveillance, Performance Assessment And Maintaining, Safety Of Prupolsion Plant And Auxiliary Machineries",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU03",
+     "no": 3,
+     "nama": "Manage Trouble-Shooting, Restoration Of Electrical And Electronic Control Equipment To Operating Condition",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU04",
+     "no": 4,
+     "nama": "Manage Safe And Effective Maintenance And Repair Procedures",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU05",
+     "no": 5,
+     "nama": "Detect And Identify The Cause Of Machinery Malfunctions And Correct Faults",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU06",
+     "no": 6,
+     "nama": "Maintain Safety And Security Of The Vessel, Crew And Passengers And The Operational Condition Of Life-Saving, Fire-Fighting And Other Safety Systems",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU07",
+     "no": 7,
+     "nama": "Use Leadership And Managerial Skills",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU08",
+     "no": 8,
+     "nama": "English Language",
+     "jenis": "CBA"
+    },
+    {
+     "kode": "MU09",
+     "no": 9,
+     "nama": "Marine Engineering at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU10",
+     "no": 10,
+     "nama": "Electrical, Electronic, Control System at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU11",
+     "no": 11,
+     "nama": "Maintenance and Repair at the Management Level",
+     "jenis": "Komprehensif"
+    },
+    {
+     "kode": "MU12",
+     "no": 12,
+     "nama": "Controlling the Operation of the Ship and Care of Person on board",
+     "jenis": "Komprehensif"
+    }
+   ]
+  }
+ ],
+ "total_mu": 269,
+ "total_tingkat": 19,
+ "total_cba": 218,
+ "total_komp": 51
+}
