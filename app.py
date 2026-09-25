@@ -305,9 +305,28 @@ def api_stats():
     }
 
 
+# Loaded once at import, like the competency guide: the holiday table changes
+# once a year when the SKB is issued, so re-reading it per request buys nothing.
+# Keys are stripped of the "_" metadata entries before reaching the template.
+def _load_libur():
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "static", "libur.json")
+    try:
+        with open(p, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in data.items() if not k.startswith("_")}
+
+
+LIBUR = _load_libur()
+
+
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html", diklats=_diklats())
+    # An empty LIBUR is not fatal: the calendar simply renders without
+    # holiday marks rather than failing the whole dashboard.
+    return render_template("index.html", diklats=_diklats(), libur=LIBUR)
 
 
 # Loaded once at import: the guide is static reference data rebuilt only when

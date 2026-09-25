@@ -1,0 +1,70 @@
+{
+  "_sumber": [
+    "2026: SKB Menag/Menaker/MenPANRB No. 1497 Tahun 2025, No. 2 Tahun 2025, No. 5 Tahun 2025 (ditetapkan 19 September 2025)",
+    "2027: SKB Menag/Menaker/MenPANRB No. 1205 Tahun 2026, No. 3 Tahun 2026, No. 2 Tahun 2026 (ditetapkan 15 September 2026)"
+  ],
+  "_catatan": "libur = Hari Libur Nasional (tanggal merah). cuti = Cuti Bersama. Tanggal Idul Fitri/Idul Adha dapat bergeser melalui Keputusan Menteri Agama.",
+  "2026": {
+    "libur": {
+      "01-01": "Tahun Baru 2026 Masehi",
+      "01-16": "Isra Mikraj Nabi Muhammad SAW",
+      "02-17": "Tahun Baru Imlek 2577 Kongzili",
+      "03-19": "Hari Suci Nyepi (Tahun Baru Saka 1948)",
+      "03-21": "Idul Fitri 1447 Hijriah",
+      "03-22": "Idul Fitri 1447 Hijriah",
+      "04-03": "Wafat Yesus Kristus",
+      "04-05": "Kebangkitan Yesus Kristus (Paskah)",
+      "05-01": "Hari Buruh Internasional",
+      "05-14": "Kenaikan Yesus Kristus",
+      "05-27": "Idul Adha 1447 Hijriah",
+      "05-31": "Hari Raya Waisak 2570 BE",
+      "06-01": "Hari Lahir Pancasila",
+      "06-16": "1 Muharam Tahun Baru Islam 1448 Hijriah",
+      "08-17": "Proklamasi Kemerdekaan",
+      "08-25": "Maulid Nabi Muhammad SAW",
+      "12-25": "Kelahiran Yesus Kristus (Natal)"
+    },
+    "cuti": {
+      "02-16": "Cuti Bersama Tahun Baru Imlek 2577 Kongzili",
+      "03-18": "Cuti Bersama Hari Suci Nyepi",
+      "03-20": "Cuti Bersama Idul Fitri 1447 Hijriah",
+      "03-23": "Cuti Bersama Idul Fitri 1447 Hijriah",
+      "03-24": "Cuti Bersama Idul Fitri 1447 Hijriah",
+      "05-15": "Cuti Bersama Kenaikan Yesus Kristus",
+      "05-28": "Cuti Bersama Idul Adha 1447 Hijriah",
+      "12-24": "Cuti Bersama Kelahiran Yesus Kristus"
+    }
+  },
+  "2027": {
+    "libur": {
+      "01-01": "Tahun Baru 2027 Masehi",
+      "01-05": "Isra Mikraj Nabi Muhammad SAW 1448 Hijriah",
+      "02-06": "Tahun Baru Imlek 2578 Kongzili",
+      "03-08": "Hari Suci Nyepi (Tahun Baru Saka 1949)",
+      "03-10": "Idul Fitri 1448 Hijriah",
+      "03-11": "Idul Fitri 1448 Hijriah",
+      "03-26": "Wafat Yesus Kristus",
+      "03-28": "Kebangkitan Yesus Kristus (Paskah)",
+      "05-01": "Hari Buruh Internasional",
+      "05-06": "Kenaikan Yesus Kristus",
+      "05-17": "Idul Adha 1448 Hijriah",
+      "05-20": "Hari Raya Waisak 2571 BE",
+      "06-01": "Hari Lahir Pancasila",
+      "06-06": "1 Muharam Tahun Baru Islam 1449 Hijriah",
+      "08-15": "Maulid Nabi Muhammad SAW",
+      "08-17": "Proklamasi Kemerdekaan",
+      "12-25": "Kelahiran Yesus Kristus (Natal)",
+      "12-26": "Isra Mikraj Nabi Muhammad SAW 1449 Hijriah"
+    },
+    "cuti": {
+      "02-05": "Cuti Bersama Tahun Baru Imlek 2578 Kongzili",
+      "03-09": "Cuti Bersama Idul Fitri 1448 Hijriah",
+      "03-12": "Cuti Bersama Idul Fitri 1448 Hijriah",
+      "03-15": "Cuti Bersama Idul Fitri 1448 Hijriah",
+      "03-25": "Cuti Bersama Wafat Yesus Kristus",
+      "05-18": "Cuti Bersama Idul Adha 1448 Hijriah",
+      "05-19": "Cuti Bersama Hari Raya Waisak 2571 BE",
+      "12-24": "Cuti Bersama Kelahiran Yesus Kristus"
+    }
+  }
+}

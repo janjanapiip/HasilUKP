@@ -1,10 +1,13 @@
 {# Calendar / Clock / Weather strip.
 
-   All three run entirely in the browser: the clock and calendar need no
-   network at all, and the weather comes straight from Open-Meteo, which is
-   keyless and sends 'access-control-allow-origin: *'. Nothing here touches
-   the Flask function, so the widgets cost no serverless invocations and keep
-   working if the API is down (the card degrades to a short message).
+   Clock and calendar need no network at all. Holidays are inlined by Flask
+   from static/libur.json (official SKB 3 Menteri), so the calendar is correct
+   before a single request is made. Weather comes from BMKG's public API --
+   the national met agency, Indonesian-language, keyless, CORS-open, and
+   pinned to the Marunda village code where the campus sits.
+
+   Each widget is wrapped in its own try/catch: one failing must never take
+   the other two down with it.
 #}
 <div class="wdg">
 
@@ -12,9 +15,9 @@
   <div class="card wcard wclock">
     <div class="wglow"></div>
     <div class="wlabel">Waktu Sekarang</div>
-    <div class="wtime"><span id="wkT">--:--</span><span class="wsec" id="wkS">00</span></div>
+    <div class="wtime"><span id="wkT">--:--</span><span class="wsec" id="wkS">--</span></div>
     <div class="wsub" id="wkD">&nbsp;</div>
-    <div class="wfoot"><span id="wkZ">WIB</span> · Zona waktu perangkat</div>
+    <div class="wfoot"><span id="wkZ">WIB</span> · <span id="wkH">&nbsp;</span></div>
   </div>
 
   {# ---------------------------------------------------------- calendar #}
@@ -28,8 +31,9 @@
       <button type="button" class="wnav" id="cNext" aria-label="Bulan berikutnya">&rsaquo;</button>
     </div>
     <table class="wcal-grid" id="calG"></table>
+    <div class="wcal-note" id="calN"></div>
     <div class="wfoot wcal-foot">
-      <span id="calToday">&nbsp;</span>
+      <span class="wleg"><i class="d-lib"></i>Libur nasional <i class="d-cut"></i>Cuti bersama</span>
       <button type="button" class="wlink" id="cNow" style="display:none">Hari ini</button>
     </div>
   </div>
@@ -37,7 +41,7 @@
   {# ---------------------------------------------------------- weather #}
   <div class="card wcard wwx">
     <div class="wglow"></div>
-    <div class="wlabel">Cuaca <span id="wxPlace">Jakarta</span></div>
+    <div class="wlabel">Cuaca <span id="wxPlace">Marunda</span></div>
     <div class="wwx-now">
       <div class="wicon" id="wxI"></div>
       <div>
@@ -71,6 +75,7 @@
   letter-spacing:-.02em;color:var(--navy)}
 .wsec{font-size:16px;font-weight:700;color:var(--brand);
       background:var(--tint);border-radius:6px;padding:1px 6px;align-self:center}
+#wkH{font-weight:600}
 
 /* calendar */
 .wcal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -85,12 +90,26 @@
 .wcal-grid td span{display:block;margin:1px auto;width:26px;line-height:26px;
   font-size:12.5px;border-radius:50%;color:var(--ink)}
 .wcal-grid td.sun span{color:var(--bad)}
+.wcal-grid td.lib span{color:var(--bad);font-weight:700}
+.wcal-grid td.cut span{color:#d46b08;font-weight:600}
+.wcal-grid td.lib span::after,.wcal-grid td.cut span::after{content:"";display:block;
+  width:4px;height:4px;border-radius:50%;margin:-6px auto 0;background:currentColor}
 .wcal-grid td.off span{color:#c3ccdb}
+.wcal-grid td.off.lib span,.wcal-grid td.off.cut span{color:#dcc6c6}
 .wcal-grid td.today span{background:var(--brand);color:#fff;font-weight:700;
   box-shadow:0 2px 8px rgba(6,82,233,.35)}
+.wcal-grid td.today span::after{background:#fff}
+.wcal-note{font-size:11.5px;margin-top:9px;min-height:1.4em;line-height:1.5}
+.wcal-note b{display:block;font-weight:600;color:var(--bad)}
+.wcal-note b.c{color:#d46b08}
+.wcal-note .none{color:var(--muted)}
 .wcal-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wleg{display:flex;align-items:center;gap:4px;font-size:10.5px;flex-wrap:wrap}
+.wleg i{width:6px;height:6px;border-radius:50%;display:inline-block;margin-left:4px}
+.wleg i:first-child{margin-left:0}
+.wleg .d-lib{background:var(--bad)} .wleg .d-cut{background:#d46b08}
 .wlink{background:none;border:0;padding:0;font-size:11.5px;font-weight:600;
-       color:var(--brand);cursor:pointer;text-decoration:underline}
+       color:var(--brand);cursor:pointer;text-decoration:underline;white-space:nowrap}
 .wlink:hover{background:none;color:var(--brand-dark)}
 
 /* weather */
@@ -109,172 +128,256 @@
 .wwx-fc .wfi{width:20px;height:20px;margin:2px auto;color:var(--brand-light)}
 
 @media print{.wdg{display:none}}
-@media (prefers-reduced-motion:no-preference){
-  .wsec{transition:background .2s}
-}
 </style>
 
 <script>
+// Holidays are inlined at render time from static/libur.json -- no fetch, so
+// the calendar is never wrong just because a network call is slow or blocked.
+window.LIBUR = {{ libur|tojson }};
+</script>
+<script>
 (function(){
-  // ---------------------------------------------------------------- clock
-  const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-  const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli',
-                 'Agustus','September','Oktober','November','Desember'];
-  const p2 = n => String(n).padStart(2,'0');
-  const kT = document.getElementById('wkT'), kS = document.getElementById('wkS'),
-        kD = document.getElementById('wkD'), kZ = document.getElementById('wkZ');
+  'use strict';
+  var HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli',
+               'Agustus','September','Oktober','November','Desember'];
+  var p2 = function(n){ return String(n).padStart(2,'0'); };
+  var $  = function(id){ return document.getElementById(id); };
+  var LIB = window.LIBUR || {};
+  var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+              .replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
-  // Offset in whole hours only maps onto WIB/WITA/WIT; anything else (a
-  // traveller, a misconfigured PC) shows the IANA zone instead of a wrong label.
-  const offs = -new Date().getTimezoneOffset() / 60;
-  const ID_ZONE = {7:'WIB', 8:'WITA', 9:'WIT'};
-  kZ.textContent = ID_ZONE[offs]
-    || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local');
-
-  let lastDay = -1;
-  function tick(){
-    const d = new Date();
-    kT.textContent = p2(d.getHours()) + ':' + p2(d.getMinutes());
-    kS.textContent = p2(d.getSeconds());
-    if (d.getDate() !== lastDay){          // only rebuild the date line on change
-      lastDay = d.getDate();
-      kD.textContent = `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
-      if (view.getMonth() === d.getMonth() && view.getFullYear() === d.getFullYear())
-        drawCal();                          // roll the highlight over midnight
-    }
+  // Look up a date in the SKB table. Returns null, or {t:'libur'|'cuti', n:name}.
+  function holiday(d){
+    var y = LIB[String(d.getFullYear())];
+    if (!y) return null;
+    var key = p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+    if (y.libur && y.libur[key]) return {t:'libur', n:y.libur[key]};
+    if (y.cuti  && y.cuti[key])  return {t:'cuti',  n:y.cuti[key]};
+    return null;
   }
-  // Re-sync to the top of each second instead of drifting on a 1000ms interval.
-  (function loop(){
-    tick();
-    setTimeout(loop, 1000 - (Date.now() % 1000) + 5);
-  })();
 
   // ------------------------------------------------------------- calendar
-  const calG = document.getElementById('calG'), calM = document.getElementById('calM'),
-        calY = document.getElementById('calY'), calT = document.getElementById('calToday'),
-        cNow = document.getElementById('cNow');
-  let view = new Date();
+  // `view` is declared before the clock on purpose: the clock's midnight
+  // rollover calls drawCal(), and the previous version read `view` from a
+  // tick that fired before `let view` was initialised -- a TDZ
+  // ReferenceError that killed this whole IIFE, clock and weather included.
+  var view = new Date();
 
   function drawCal(){
-    const y = view.getFullYear(), m = view.getMonth(), now = new Date();
-    calM.textContent = BULAN[m];
-    calY.textContent = y;
-    // Monday-first, matching Indonesian calendars.
-    const first = (new Date(y, m, 1).getDay() + 6) % 7;
-    const days  = new Date(y, m + 1, 0).getDate();
-    const prev  = new Date(y, m, 0).getDate();
-    let html = '<tr>' + ['Sen','Sel','Rab','Kam','Jum','Sab','Min']
-      .map(d => `<th>${d}</th>`).join('') + '</tr><tr>';
-    for (let i = 0; i < 42; i++){
+    var calG = $('calG'); if (!calG) return;
+    var y = view.getFullYear(), m = view.getMonth(), now = new Date();
+    $('calM').textContent = BULAN[m];
+    $('calY').textContent = y;
+
+    var first = (new Date(y, m, 1).getDay() + 6) % 7;   // Monday-first
+    var days  = new Date(y, m + 1, 0).getDate();
+    var prev  = new Date(y, m, 0).getDate();
+    var html = '<tr>' + ['Sen','Sel','Rab','Kam','Jum','Sab','Min']
+      .map(function(d){ return '<th>' + d + '</th>'; }).join('') + '</tr><tr>';
+    var found = [];
+    for (var i = 0; i < 42; i++){
       if (i && i % 7 === 0) html += '</tr><tr>';
-      const n = i - first + 1;
-      const off = n < 1 || n > days;
-      const num = off ? (n < 1 ? prev + n : n - days) : n;
-      const isToday = !off && n === now.getDate() && m === now.getMonth()
-                      && y === now.getFullYear();
-      const cls = [off ? 'off' : '', i % 7 === 6 ? 'sun' : '', isToday ? 'today' : '']
-        .filter(Boolean).join(' ');
-      html += `<td class="${cls}"><span>${num}</span></td>`;
+      var n = i - first + 1;
+      var off = n < 1 || n > days;
+      var num = off ? (n < 1 ? prev + n : n - days) : n;
+      // Build the real date for this cell, spill-over days included, so a
+      // holiday in a neighbouring month still shows its dot.
+      var h = holiday(new Date(y, m, n));
+      var isToday = !off && n === now.getDate() && m === now.getMonth()
+                    && y === now.getFullYear();
+      if (!off && h) found.push([n, h]);
+      var cls = [off ? 'off' : '', i % 7 === 6 ? 'sun' : '',
+                 h ? (h.t === 'libur' ? 'lib' : 'cut') : '',
+                 isToday ? 'today' : ''].filter(Boolean).join(' ');
+      html += '<td class="' + cls + '"' + (h ? ' title="' + esc(h.n) + '"' : '') +
+              '><span>' + num + '</span></td>';
     }
     calG.innerHTML = html + '</tr>';
 
-    const same = m === now.getMonth() && y === now.getFullYear();
-    calT.textContent = same
-      ? `${HARI[now.getDay()]}, ${now.getDate()} ${BULAN[m]}`
-      : `${days} hari`;
-    cNow.style.display = same ? 'none' : '';
+    // List the month's holidays under the grid: the dots alone are unreadable
+    // on touch, where there is no hover to reveal the title.
+    $('calN').innerHTML = found.length
+      ? found.map(function(x){
+          return '<b' + (x[1].t === 'cuti' ? ' class="c"' : '') + '>' +
+                 x[0] + ' ' + BULAN[m] + ' — ' + esc(x[1].n) + '</b>';
+        }).join('')
+      : '<span class="none">Tidak ada libur nasional bulan ini</span>';
+
+    var same = m === now.getMonth() && y === now.getFullYear();
+    $('cNow').style.display = same ? 'none' : '';
   }
-  document.getElementById('cPrev').onclick = () => { view.setMonth(view.getMonth()-1); drawCal(); };
-  document.getElementById('cNext').onclick = () => { view.setMonth(view.getMonth()+1); drawCal(); };
-  cNow.onclick = () => { view = new Date(); drawCal(); };
-  drawCal();
+
+  try{
+    $('cPrev').onclick = function(){ view.setDate(1); view.setMonth(view.getMonth()-1); drawCal(); };
+    $('cNext').onclick = function(){ view.setDate(1); view.setMonth(view.getMonth()+1); drawCal(); };
+    $('cNow').onclick  = function(){ view = new Date(); drawCal(); };
+    drawCal();
+  }catch(e){ console.error('kalender:', e); }
+
+  // ---------------------------------------------------------------- clock
+  try{
+    var kT = $('wkT'), kS = $('wkS'), kD = $('wkD'), kZ = $('wkZ'), kH = $('wkH');
+    // Whole-hour offsets map onto WIB/WITA/WIT; anything else (a traveller, a
+    // misconfigured PC) shows the IANA zone rather than a wrong label.
+    var offs = -new Date().getTimezoneOffset() / 60;
+    var ID_ZONE = {7:'WIB', 8:'WITA', 9:'WIT'};
+    kZ.textContent = ID_ZONE[offs] ||
+      (Intl.DateTimeFormat().resolvedOptions().timeZone || 'Waktu lokal');
+
+    var lastDay = -1;
+    function tick(){
+      var d = new Date();
+      kT.textContent = p2(d.getHours()) + ':' + p2(d.getMinutes());
+      kS.textContent = p2(d.getSeconds());
+      if (d.getDate() !== lastDay){          // rebuild the date line only on change
+        lastDay = d.getDate();
+        kD.textContent = HARI[d.getDay()] + ', ' + d.getDate() + ' ' +
+                         BULAN[d.getMonth()] + ' ' + d.getFullYear();
+        var h = holiday(d);
+        kH.textContent = h ? h.n : (d.getDay() === 0 ? 'Hari Minggu'
+                                 : d.getDay() === 6 ? 'Hari Sabtu' : 'Hari kerja');
+        kH.style.color = (h || d.getDay() === 0) ? 'var(--bad)' : 'var(--muted)';
+        if (view.getMonth() === d.getMonth() && view.getFullYear() === d.getFullYear())
+          drawCal();                          // roll the highlight over midnight
+      }
+    }
+    // Re-sync to the top of each second instead of drifting on setInterval.
+    (function loop(){
+      try{ tick(); }catch(e){ console.error('jam:', e); }
+      setTimeout(loop, 1000 - (Date.now() % 1000) + 5);
+    })();
+  }catch(e){ console.error('jam:', e); }
 
   // -------------------------------------------------------------- weather
-  // WMO code -> [label, icon]. Grouped, because the full table is 28 codes
-  // and participants do not need 'light freezing drizzle' spelled out.
-  const S = (...p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p.join('')}</svg>`;
-  const SUN   = S('<circle cx="12" cy="12" r="4.2"/>','<path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>');
-  const MOON  = S('<path d="M20 14.5A8.5 8.5 0 019.5 4a7 7 0 1010.5 10.5z"/>');
-  const CLOUD = S('<path d="M7 18h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 18z"/>');
-  const PCLD  = S('<circle cx="8.5" cy="8" r="3"/>','<path d="M8.5 2.5v1.3M3.9 4.4l.9.9M2.5 8.7h1.3M13.1 4.4l-.9.9"/>','<path d="M9 19h7.5a3.4 3.4 0 10-.9-6.7A4.8 4.8 0 009 19z"/>');
-  const RAIN  = S('<path d="M7 15h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 15z"/>','<path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"/>');
-  const STORM = S('<path d="M7 14h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 14z"/>','<path d="M13 15l-2.5 4H14l-2 3.5"/>');
-  const FOG   = S('<path d="M7 12h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 12z"/>','<path d="M4 16h16M6 19.5h12"/>');
-  const SNOW  = S('<path d="M7 14h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 14z"/>','<path d="M9 18h.01M12 20h.01M15 18h.01"/>');
+  try{
+    var S = function(){
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+        Array.prototype.slice.call(arguments).join('') + '</svg>';
+    };
+    var SUN   = S('<circle cx="12" cy="12" r="4.2"/>','<path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>');
+    var MOON  = S('<path d="M20 14.5A8.5 8.5 0 019.5 4a7 7 0 1010.5 10.5z"/>');
+    var CLOUD = S('<path d="M7 18h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 18z"/>');
+    var PCLD  = S('<circle cx="8.5" cy="8" r="3"/>','<path d="M8.5 2.5v1.3M3.9 4.4l.9.9M2.5 8.7h1.3M13.1 4.4l-.9.9"/>','<path d="M9 19h7.5a3.4 3.4 0 10-.9-6.7A4.8 4.8 0 009 19z"/>');
+    var RAIN  = S('<path d="M7 15h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 15z"/>','<path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"/>');
+    var STORM = S('<path d="M7 14h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 14z"/>','<path d="M13 15l-2.5 4H14l-2 3.5"/>');
+    var FOG   = S('<path d="M7 12h9.5a3.5 3.5 0 10-1-6.9A5 5 0 007 12z"/>','<path d="M4 16h16M6 19.5h12"/>');
 
-  function wmo(c, day){
-    if (c === 0)                 return ['Cerah', day ? SUN : MOON];
-    if (c <= 2)                  return ['Cerah berawan', day ? PCLD : MOON];
-    if (c === 3)                 return ['Berawan', CLOUD];
-    if (c === 45 || c === 48)    return ['Berkabut', FOG];
-    if (c >= 51 && c <= 57)      return ['Gerimis', RAIN];
-    if (c >= 61 && c <= 67)      return ['Hujan', RAIN];
-    if (c >= 71 && c <= 77)      return ['Salju', SNOW];
-    if (c >= 80 && c <= 82)      return ['Hujan lokal', RAIN];
-    if (c >= 85 && c <= 86)      return ['Hujan salju', SNOW];
-    if (c >= 95)                 return ['Hujan petir', STORM];
-    return ['Berawan', CLOUD];
-  }
-
-  const wxT = document.getElementById('wxT'), wxD = document.getElementById('wxD'),
-        wxI = document.getElementById('wxI'), wxM = document.getElementById('wxM'),
-        wxF = document.getElementById('wxF'), wxU = document.getElementById('wxU');
-
-  // STIP Jakarta, Marunda. Fixed on purpose: no geolocation prompt, and every
-  // participant sees the campus weather rather than their own.
-  const LAT = -6.1275, LON = 106.9447;
-  const API = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT +
-    '&longitude=' + LON +
-    '&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,' +
-    'precipitation,weather_code,wind_speed_10m' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
-    '&timezone=Asia%2FJakarta&forecast_days=4';
-
-  async function weather(){
-    try{
-      const ctl = AbortSignal.timeout ? AbortSignal.timeout(9000) : undefined;
-      const r = await fetch(API, {signal: ctl});
-      if (!r.ok) throw new Error(r.status);
-      const j = await r.json();
-      const c = j.current, day = c.is_day === 1;
-      const [txt, icon] = wmo(c.weather_code, day);
-
-      wxT.textContent = Math.round(c.temperature_2m);
-      wxD.textContent = txt;
-      wxI.innerHTML = icon;
-      wxM.innerHTML = [
-        `terasa ${Math.round(c.apparent_temperature)}°`,
-        `lembap ${c.relative_humidity_2m}%`,
-        `angin ${Math.round(c.wind_speed_10m)} km/j`,
-        c.precipitation > 0 ? `hujan ${c.precipitation} mm` : ''
-      ].filter(Boolean).map(s => `<i>${s}</i>`).join('');
-
-      const d = j.daily;
-      wxF.innerHTML = d.time.slice(1, 4).map((t, i) => {
-        const dt = new Date(t + 'T00:00:00');
-        const [, ic] = wmo(d.weather_code[i + 1], true);
-        return `<div>${HARI[dt.getDay()].slice(0,3)}
-          <div class="wfi">${ic}</div>
-          <b>${Math.round(d.temperature_2m_max[i+1])}°</b>
-          ${Math.round(d.temperature_2m_min[i+1])}°</div>`;
-      }).join('');
-
-      const u = new Date();
-      wxU.textContent = `Diperbarui ${p2(u.getHours())}:${p2(u.getMinutes())} · Open-Meteo`;
-    }catch(e){
-      // Never let a dead API blank the card mid-session: keep the last good
-      // reading on screen and only show the notice on a cold failure.
-      wxU.textContent = 'Data cuaca tidak tersedia · coba lagi nanti';
-      if (wxT.textContent === '--') wxD.textContent = 'Tidak tersedia';
+    // BMKG weather codes: 0 Cerah, 1-3 berawan, 4x kabut/asap, 6x hujan,
+    // 80+ hujan lokal/lebat, 95+ petir. BMKG sends the label itself, so this
+    // only has to pick an icon -- no Indonesian text table to keep in sync.
+    function icon(code, day){
+      var c = Number(code);
+      if (c === 0)                         return day ? SUN : MOON;
+      if (c === 1 || c === 2)              return day ? PCLD : MOON;
+      if (c === 3 || c === 4)              return CLOUD;
+      if (c === 5 || c === 10 || c === 45) return FOG;
+      if (c >= 95)                         return STORM;
+      if (c >= 60)                         return RAIN;
+      return CLOUD;
     }
-  }
-  weather();
-  setInterval(weather, 15 * 60 * 1000);   // API updates every 15 min
-  // Refresh on return to the tab, but not more than once every 5 minutes.
-  let last = Date.now();
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && Date.now() - last > 3e5){ last = Date.now(); weather(); }
-  });
+
+    var wxT = $('wxT'), wxD = $('wxD'), wxI = $('wxI'),
+        wxM = $('wxM'), wxF = $('wxF'), wxU = $('wxU');
+
+    // Marunda, Cilincing -- the kelurahan code for the STIP campus. Fixed on
+    // purpose: no geolocation prompt, everyone sees the campus forecast.
+    var API = 'https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.72.04.1003';
+    var everOk = false;   // explicit, rather than sniffing the rendered text
+
+    function weather(){
+      var opt = {};
+      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout)
+        opt.signal = AbortSignal.timeout(9000);
+      fetch(API, opt).then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function(j){
+        // data[0].cuaca is an array of arrays of 3-hourly slots.
+        var raw = (j.data && j.data[0] && j.data[0].cuaca) || [];
+        var slots = [];
+        raw.forEach(function(g){
+          (Array.isArray(g) ? g : [g]).forEach(function(s){
+            if (s && s.local_datetime) slots.push(s);
+          });
+        });
+        if (!slots.length) throw new Error('kosong');
+        slots.sort(function(a,b){
+          return a.local_datetime < b.local_datetime ? -1
+               : a.local_datetime > b.local_datetime ? 1 : 0;
+        });
+
+        // Nearest slot at or before now; fall back to the first upcoming one.
+        var now = new Date();
+        var nowS = now.getFullYear() + '-' + p2(now.getMonth()+1) + '-' +
+                   p2(now.getDate()) + ' ' + p2(now.getHours());
+        var cur = null;
+        slots.forEach(function(s){
+          if (s.local_datetime.slice(0,13) <= nowS) cur = s;
+        });
+        cur = cur || slots[0];
+
+        var hr = Number(cur.local_datetime.slice(11,13));
+        var day = hr >= 6 && hr < 18;
+        wxT.textContent = Math.round(cur.t);
+        wxD.textContent = cur.weather_desc || '-';
+        wxI.innerHTML = icon(cur.weather, day);
+        wxM.innerHTML = [
+          'lembap ' + cur.hu + '%',
+          ('angin ' + Math.round(cur.ws) + ' km/j ' + (cur.wd || '')).trim(),
+          cur.tcc != null ? 'awan ' + Math.round(cur.tcc) + '%' : '',
+          cur.tp > 0 ? 'hujan ' + cur.tp + ' mm' : ''
+        ].filter(Boolean).map(function(s){ return '<i>' + esc(s) + '</i>'; }).join('');
+
+        // Group the remaining slots by date and show the next three days.
+        var byDay = {};
+        slots.forEach(function(s){
+          var k = s.local_datetime.slice(0,10);
+          (byDay[k] = byDay[k] || []).push(s);
+        });
+        var today = cur.local_datetime.slice(0,10);
+        // Only whole days: BMKG's first and last day are often partial, and a
+        // min/max drawn from three evening slots is not a daily range.
+        var keys = Object.keys(byDay).sort().filter(function(k){
+          return k > today && byDay[k].length >= 6;
+        }).slice(0,3);
+        wxF.innerHTML = keys.map(function(k){
+          var ss = byDay[k];
+          var temps = ss.map(function(s){ return Number(s.t); })
+                        .filter(function(n){ return !isNaN(n); });
+          if (!temps.length) return '';
+          // Icon from the slot nearest midday -- BMKG emits 11:00 and 14:00,
+          // not 13:00, so match on the closest hour instead of an exact one.
+          var mid = ss.slice().sort(function(a, b){
+            return Math.abs(Number(a.local_datetime.slice(11,13)) - 12) -
+                   Math.abs(Number(b.local_datetime.slice(11,13)) - 12);
+          })[0];
+          var dt = new Date(k + 'T00:00:00');
+          return '<div>' + HARI[dt.getDay()].slice(0,3) +
+            '<div class="wfi">' + icon(mid.weather, true) + '</div>' +
+            '<b>' + Math.max.apply(null, temps) + '°</b>' +
+            Math.min.apply(null, temps) + '°</div>';
+        }).join('');
+
+        var u = new Date();
+        wxU.textContent = 'Diperbarui ' + p2(u.getHours()) + ':' + p2(u.getMinutes()) +
+                          ' · BMKG';
+        everOk = true;
+      }).catch(function(e){
+        console.error('cuaca:', e);
+        // Keep the last good reading on screen; only a cold failure blanks the
+        // line, so a blip does not wipe a card the user is reading.
+        wxU.textContent = 'Data cuaca BMKG tidak tersedia';
+        if (!everOk){ wxT.textContent = '--'; wxD.textContent = 'Tidak tersedia'; }
+      });
+    }
+    weather();
+    setInterval(weather, 15 * 60 * 1000);   // BMKG refreshes roughly this often
+    var last = Date.now();
+    document.addEventListener('visibilitychange', function(){
+      if (!document.hidden && Date.now() - last > 3e5){ last = Date.now(); weather(); }
+    });
+  }catch(e){ console.error('cuaca:', e); }
 })();
 </script>
