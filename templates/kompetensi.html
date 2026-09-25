@@ -3,7 +3,7 @@
 
 <h1>Daftar Kompetensi Ujian Keahlian Pelaut</h1>
 <p class="sub">Panduan mata uji untuk peserta UKP Perdana — {{ k.total_tingkat }} tingkat ijazah,
-   {{ k.total_mu }} mata uji ({{ k.total_cba }} CBA + {{ k.total_komp }} non-CBA).</p>
+   {{ k.total_mu }} mata uji ({{ k.total_cba }} CBA + {{ k.total_komp }} Komprehensif).</p>
 
 <div class="card no-print" style="margin-top:16px">
   <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">
@@ -19,7 +19,6 @@
       <option value="">Semua jenis</option>
       <option value="CBA">CBA</option>
       <option value="Komprehensif">Komprehensif</option>
-      <option value="Praktik">Praktik</option>
     </select></label>
     <button type="button" class="btn" onclick="window.print()" style="margin-left:auto">
       Unduh PDF / Cetak</button>
@@ -36,7 +35,7 @@
   <h2>Ringkasan per Tingkat Ijazah</h2>
   <table id="tSum">
     <tr><th>Tingkat</th><th>Kode</th><th>Nama Ijazah</th>
-        <th style="text-align:right">CBA</th><th style="text-align:right">Non-CBA</th>
+        <th style="text-align:right">CBA</th><th style="text-align:right">Komprehensif</th>
         <th style="text-align:right">Total</th></tr>
     {% for t in k.tingkat %}
     <tr data-k="{{ t.kode }}" style="cursor:pointer">
@@ -59,16 +58,13 @@
 <div class="card lv" id="{{ t.kode }}" data-k="{{ t.kode }}" data-g="{{ t.grup }}">
   <h2 style="margin-bottom:2px">{{ t.tingkat }} <span class="muted" style="font-weight:400">({{ t.kode }})</span></h2>
   <p class="muted" style="margin:0 0 12px">{{ t.nama }} · {{ t.grup }} ·
-     {{ t.total }} mata uji ({{ t.cba }} CBA +
-     {% set prak = t.mu|selectattr('jenis','equalto','Praktik')|list|length %}
-     {% if prak %}{{ t.komp - prak }} Komprehensif + {{ prak }} Praktik
-     {% else %}{{ t.komp }} Komprehensif{% endif %})</p>
+     {{ t.total }} mata uji ({{ t.cba }} CBA + {{ t.komp }} Komprehensif)</p>
   <table>
     <tr><th style="width:3rem">No</th><th style="width:5rem">Kode</th>
         <th>Nama Kompetensi (Mata Uji)</th><th style="width:8rem">Jenis Ujian</th></tr>
     {% for m in t.mu %}
     <tr class="mu"><td>{{ m.no }}</td><td>{{ m.kode }}</td><td>{{ m.nama }}</td>
-      <td><span class="tag {{ 'cba' if m.jenis|lower == 'cba' else ('prak' if m.jenis|lower == 'praktik' else 'komp') }}">{{ m.jenis }}</span></td></tr>
+      <td><span class="tag {{ 'komp' if m.jenis|lower != 'cba' else 'cba' }}">{{ m.jenis }}</span></td></tr>
     {% endfor %}
   </table>
 </div>
@@ -83,11 +79,8 @@
     <tr><th style="width:9rem">CBA</th>
         <td><i>Competency Based Assessment</i> — ujian per unit kompetensi.</td></tr>
     <tr><th>Komprehensif</th>
-        <td>Ujian menyeluruh yang menggabungkan beberapa kompetensi sekaligus.</td></tr>
-    <tr><th>Praktik</th>
-        <td>Ujian peragaan alat — hanya pada GMDSS (MU03 dan MU04).
-            Pada sheet rekapitulasi workbook, dua mata uji ini dihitung
-            bersama kolom Komprehensif.</td></tr>
+        <td>Ujian menyeluruh yang menggabungkan beberapa kompetensi sekaligus,
+            termasuk mata uji peragaan alat pada GMDSS (MU03 dan MU04).</td></tr>
     <tr><th>Batas lulus</th><td>Nilai <b>&ge; 70</b> pada setiap mata uji.</td></tr>
   </table>
   <p class="muted" style="margin:12px 0 0">
@@ -99,7 +92,6 @@
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
 .tag.cba{background:#e6f4ff;color:#0652e9}
 .tag.komp{background:#fff4e6;color:#d4380d}
-.tag.prak{background:#f6ffed;color:#389e0d}
 .print-only{display:none}
 @media print{
   .no-print,nav,header,footer,.masthead{display:none !important}

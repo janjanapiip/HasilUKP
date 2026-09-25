@@ -88,17 +88,29 @@ for t in K["tingkat"]:
     if nos != list(range(1, len(nos) + 1)):
         fails.append(f"3. {t['tingkat']} subject numbers not sequential")
     jen = {m["jenis"] for m in t["mu"]}
-    if not jen <= {"CBA", "Komprehensif", "Praktik"}:
+    if not jen <= {"CBA", "Komprehensif"}:
         fails.append(f"3. {t['tingkat']} unexpected jenis: {jen}")
 check("3. numbering and jenis clean across all levels",
       [f for f in fails if f.startswith("3.")], [])
-# GMDSS is the only level with a practical exam; the recap sheet has no column
-# for it and folds both rows into Komprehensif. Assert that, so a future
-# workbook that adds Praktik elsewhere fails loudly instead of silently.
-prak = {t["kode"]: sum(1 for m in t["mu"] if m["jenis"] == "Praktik")
-        for t in K["tingkat"]}
-check("3. Praktik appears only in GMDSS",
-      {k: v for k, v in prak.items() if v}, {"GMDSS": 2})
+# The detail sheet labels GMDSS MU03/MU04 'Praktik'; the recap sheet and PUKP
+# both treat them as Komprehensif. Assert the extractor normalises every
+# non-CBA label, so a workbook that reintroduces 'Praktik' cannot leak it to
+# the page or split the filter into a third option.
+check("3. no Praktik survives extraction",
+      sorted({m["jenis"] for t in K["tingkat"] for m in t["mu"]}),
+      ["CBA", "Komprehensif"])
+gmdss = next(t for t in K["tingkat"] if t["kode"] == "GMDSS")
+check("3. GMDSS MU03/MU04 are Komprehensif",
+      [m["jenis"] for m in gmdss["mu"] if m["kode"] in ("MU03", "MU04")],
+      ["Komprehensif", "Komprehensif"])
+check("3. GMDSS split is 2 CBA + 2 Komprehensif",
+      (gmdss["cba"], gmdss["komp"], gmdss["total"]), (2, 2, 4))
+# The source sheet must still say Praktik -- if it stops, the normalisation is
+# dead code and this test should be revisited rather than silently passing.
+src_prak = sum(
+    1 for r in wb["Keterampilan"].iter_rows(min_row=3, values_only=True)
+    if txt((r + (None,) * 6)[5]) == "Praktik")
+check("3. source workbook still labels 2 rows Praktik", src_prak, 2)
 
 # ------------------------------------------- 4. codes line up with the database
 import sqlite3  # noqa: E402
@@ -142,6 +154,7 @@ for code, mu, want_name in spot:
 check("5. spot-checked subjects appear in the HTML",
       [f for f in fails if "text missing" in f], [])
 check("5. subject rows in HTML", html.count('class="mu"'), K["total_mu"])
+check("5. no Praktik tag rendered", 'tag prak' in html or 'Praktik' in html, False)
 # detail.html deep-links to /kompetensi#<kode>, so every level needs an anchor.
 missing_anchor = [t["kode"] for t in K["tingkat"] if f'id="{t["kode"]}"' not in html]
 check("5. every level has a deep-link anchor", missing_anchor, [])

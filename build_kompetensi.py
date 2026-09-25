@@ -80,8 +80,16 @@ def main():
                     levels[cur] = {"tingkat": cur, "grup": grup, "mu": []}
                 continue
             if cur and c and e:
+                # The detail sheet labels GMDSS MU03/MU04 'Praktik', but the
+                # recap sheet counts them under Komprehensif and PUKP confirms
+                # Komprehensif is correct. Normalise here so the label, the
+                # filter and the totals all agree no matter how the next
+                # workbook spells it.
+                jenis = f or "CBA"
+                if not jenis.upper().startswith("CBA"):
+                    jenis = "Komprehensif"
                 levels[cur]["mu"].append(
-                    {"kode": c, "no": int(d or 0), "nama": e, "jenis": f or "CBA"})
+                    {"kode": c, "no": int(d or 0), "nama": e, "jenis": jenis})
 
     # ---- stitch + verify against the workbook's own totals
     out, bad = [], []
@@ -89,10 +97,6 @@ def main():
         d = levels[lv]
         meta, rc = idx.get(lv, {}), rec.get(lv, {})
         mu = d["mu"]
-        # The recap sheet has only two columns, so it files GMDSS's two
-        # 'Praktik' rows under Komprehensif. Keep the workbook's own label on
-        # each subject, but count anything that is not CBA as non-CBA so the
-        # totals still reconcile with 'Rekap Mata Uji'.
         cba = sum(1 for m in mu if m["jenis"].upper().startswith("CBA"))
         komp = len(mu) - cba
         if meta.get("n") and meta["n"] != len(mu):
